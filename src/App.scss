@@ -12,12 +12,13 @@ $primary: #2fc1c1;
 $secondary: #4b5588;
 $dark: #202333;
 $blue: #111320;
-$purple: #1A1C28;
+$purple: #1a1c28;
 $info: #707179;
 $gray: #b8b8be;
+$slate: #4c5f73;
 $danger: #dc3545;
 $light: #f8f9fa;
-$success: #28a745;
+$success: #00bf27;
 $warning: #f7bdbd;
 
 $theme-colors: (
@@ -28,6 +29,7 @@ $theme-colors: (
   "purple": $purple,
   "info": $info,
   "gray": $gray,
+  "slate": $slate,
   "danger": $danger,
   "light": $light,
   "success": $success,
@@ -75,6 +77,6 @@ main {
 }
 
 .grantee-path {
-    fill: none;
-    stroke: white;
+  fill: none;
+  stroke: white;
 }

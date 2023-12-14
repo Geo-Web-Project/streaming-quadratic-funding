@@ -1,7 +1,12 @@
 // @ts-nocheck
 import * as d3 from "d3";
 import { useRef, useMemo, useLayoutEffect, useState } from "react";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Container";
+import Col from "react-bootstrap/Container";
 import Card from "react-bootstrap/Card";
+import Button from "react-bootstrap/Button";
+import Image from "react-bootstrap/Image";
 import { weightedPick, getRandomNumberInRange } from "../lib/utils";
 import {
   MS_PER_SECOND,
@@ -43,7 +48,7 @@ const granteeIndexes = d3.range(grantees.length);
 const sources = ["matching", "direct", "you"];
 const sourceIndexes = d3.range(sources.length);
 const dimensions = {
-  width: 550,
+  width: 500,
   height: 750,
   margin: {
     top: 0,
@@ -63,13 +68,13 @@ export default function Visualization() {
   const [dataset, setDataset] = useState(json);
   const [timerId, setTimerId] = useState(null);
   const [timerStarted, setTimerStarted] = useState(null);
-  const [symbolsPerSecond, setSymbolsPerSecond] = useState(60);
-  const [totalYou, setTotalYou] = useState(0.12); // USDC
-  const [totalDirect, setTotalDirect] = useState(3 - totalYou); // USDC
+  const [symbolsPerSecond, setSymbolsPerSecond] = useState(0);
+  const [totalYou, setTotalYou] = useState(0.000004); // USDC
+  const [totalDirect, setTotalDirect] = useState(0.0002 - totalYou); // USDC
 
   const ethPrice = 2000;
   const totalUsdc = totalYou + totalDirect;
-  const totalMatching = 0.0015; // ETH
+  const totalMatching = totalUsdc / ethPrice; // ETH
   const totalNormalizedUsdc = totalUsdc + totalMatching * ethPrice;
 
   const symbolsPerSecondToUsdc = (symbolsPerSecond) =>
@@ -81,6 +86,13 @@ export default function Visualization() {
     totalUsdc / amount / ((dataset[0].weight + dataset[1].weight) / 100);
   const ethToSymbolsPerSecond = (amount) =>
     totalMatching / amount / (dataset[2].weight / 100);
+  const findBottomRange = (amount) =>
+    Math.pow(10, Math.floor(Math.log10(amount)));
+  const amountToSymbolsPerSecond = (amount, inputRange, outputRange) => {
+    const slope =
+      (outputRange[1] - outputRange[0]) / (inputRange[1] - inputRange[0]);
+    return outputRange[0] + slope * (amount - inputRange[0]);
+  };
 
   const [legend, setLegend] = useState({
     usdc: symbolsPerSecondToUsdc(symbolsPerSecond),
@@ -88,8 +100,6 @@ export default function Visualization() {
   });
   const svgRef = useRef<SVGSVGElement | null>(null);
   const symbolsGroup = useRef(null);
-
-  const symbolEnterInterval = MS_PER_SECOND / symbolsPerSecond;
 
   const { xScale, startYScale, endYScale, yTransitionProgressScale } =
     useMemo(() => {
@@ -126,10 +136,7 @@ export default function Visualization() {
     const svgElement = d3.select(svgRef.current);
     const bounds = svgElement
       .append("g")
-      .style(
-        "transform",
-        `translate(${dimensions.margin.left}px, ${dimensions.margin.top}px)`
-      );
+      .style("transform", `translateY(-60px)`);
     const linkLineGenerator = d3
       .line()
       .x((d, i) => i * (dimensions.boundedWidth / 5))
@@ -153,6 +160,18 @@ export default function Visualization() {
 
     symbolsGroup.current = bounds.append("g").attr("class", "symbols-group");
 
+    const bottomRange = findBottomRange(totalNormalizedUsdc);
+    const topRange = bottomRange * 10;
+
+    const symbolsPerSecond = amountToSymbolsPerSecond(
+      totalNormalizedUsdc,
+      [bottomRange, topRange],
+      [20, 60]
+    );
+    const symbolEnterInterval = MS_PER_SECOND / symbolsPerSecond;
+    console.log(symbolsPerSecond);
+
+    setSymbolsPerSecond(symbolsPerSecond);
     setTimerStarted(d3.now());
     _timerId = d3.interval(
       (elapsed) => enterSymbols(elapsed, dataset),
@@ -160,8 +179,6 @@ export default function Visualization() {
     );
     setTimerId(_timerId);
     d3.timer(updateSymbols);
-
-    //  setTimeout(() => setDoUpdate(true), 6000);
 
     return () => {
       if (_timerId) {
@@ -272,56 +289,141 @@ export default function Visualization() {
     }
   };
 
-  const perSecondToPerMonth = (amount) => amount * 60 * 60 * 24 * 30.4166666;
+  const perSecondToPerMonth = (amount) => amount * 2628000;
 
   return (
     <>
       <div className="d-flex">
-        <div className="text-white" style={{ marginTop: 145, width: 160 }}>
-          <div
-            className="bg-primary border-0 rounded-start-2 p-1"
-            style={{ height: dimensions.pathHeight }}
+        <div
+          className="text-white position-relative"
+          style={{ width: 160, height: dimensions.height }}
+        >
+          <Card
+            className="position-absolute bg-primary border-0 rounded-end-0 px-2 py-1 text-white"
+            style={{
+              bottom: startYScale(0) + 30,
+              width: 160,
+              height: dimensions.pathHeight,
+            }}
           >
-            You
-            <p className="fs-6">
-              {parseFloat(perSecondToPerMonth(totalYou).toFixed(2))} USDC
-              monthly
-              <br />
-              {parseFloat((perSecondToPerMonth(totalYou) * 12).toFixed(2))} USDC
-              total
-            </p>
-          </div>
-          <div
-            className="bg-secondary border-0 rounded-start-2 border p-1"
-            style={{ height: dimensions.pathHeight, marginTop: 105 }}
+            <Card.Title className="p-0 border-0 fs-3">You</Card.Title>
+            <Card.Body className="p-0 fs-6">
+              <div className="d-flex align-items-center gap-1">
+                <Image src={usdcWhite} alt="usdc" width={16} />
+                <span
+                  className="w-75 rounded-1 px-1 bg-primary text-white"
+                  style={{
+                    background:
+                      "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
+                  }}
+                >
+                  {parseFloat(perSecondToPerMonth(totalYou).toFixed(2))}
+                </span>
+                <span className="w-25">monthly</span>
+              </div>
+              <div className="d-flex align-items-center gap-1">
+                <Image src={usdcWhite} alt="usdc" width={16} />
+                <span
+                  className="w-75 rounded-1 px-1 bg-primary text-white"
+                  style={{
+                    background:
+                      "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
+                  }}
+                >
+                  {parseFloat((perSecondToPerMonth(totalYou) * 12).toFixed(2))}{" "}
+                </span>
+                <span className="w-25"> total</span>
+              </div>
+            </Card.Body>
+          </Card>
+          <Card
+            className="position-absolute bg-secondary border-0 rounded-end-0 px-2 py-1 text-white"
+            style={{
+              bottom: startYScale(1) + 30,
+              width: 160,
+              height: dimensions.pathHeight,
+            }}
           >
-            Direct
-            <p className="fs-6">
-              {parseFloat(perSecondToPerMonth(totalDirect).toFixed(2))} USDC
-              monthly
-              <br />
-              {parseFloat(
-                (perSecondToPerMonth(totalDirect) * 12).toFixed(2)
-              )}{" "}
-              USDC total
-            </p>
-          </div>
-          <div
-            className="bg-info border-0 rounded-start-2 p-1"
-            style={{ height: dimensions.pathHeight, marginTop: 105 }}
+            <Card.Title className="p-0 border-0 fs-4 mb-3">
+              Direct Funders
+            </Card.Title>
+            <Card.Body className="p-0 fs-6">
+              <div className="d-flex align-items-center gap-1">
+                <Image src={usdcWhite} alt="usdc" width={16} />
+                <span
+                  className="w-75 rounded-1 px-1 bg-secondary text-white"
+                  style={{
+                    background:
+                      "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
+                  }}
+                >
+                  {parseFloat(perSecondToPerMonth(totalDirect).toFixed(2))}
+                </span>
+                <span className="w-25">monthly</span>
+              </div>
+              <div className="d-flex align-items-center gap-1">
+                <Image src={usdcWhite} alt="usdc" width={16} />
+                <span
+                  className="w-75 rounded-1 px-1 bg-secondary text-white"
+                  style={{
+                    background:
+                      "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
+                  }}
+                >
+                  {parseFloat(
+                    (perSecondToPerMonth(totalDirect) * 12).toFixed(2)
+                  )}{" "}
+                </span>
+                <span className="w-25"> total</span>
+              </div>
+            </Card.Body>
+          </Card>
+          <Card
+            className="position-absolute bg-slate border-0 rounded-end-0 px-2 py-1 text-white"
+            style={{
+              bottom: startYScale(2) + 30,
+              width: 160,
+              height: dimensions.pathHeight,
+            }}
           >
-            Quadratic Matching
-            <p className="fs-6">
-              {parseFloat(perSecondToPerMonth(totalMatching).toFixed(2))} ETH
-              monthly
-              <br />
-              {parseFloat(
-                (perSecondToPerMonth(totalMatching) * 12).toFixed(2)
-              )}{" "}
-              ETH total
-            </p>
-          </div>
-          <Card className="bg-blue text-white mt-4 px-2" style={{ width: 300 }}>
+            <Card.Title className="p-0 border-0 fs-4 mb-3">
+              Quadratic Matching
+            </Card.Title>
+            <Card.Body className="p-0 fs-6">
+              <div className="d-flex align-items-center gap-1">
+                <Image src={ethWhite} alt="usdc" width={8} />
+                <span
+                  className="w-75 rounded-1 px-1 bg-slate text-white"
+                  style={{
+                    background:
+                      "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
+                  }}
+                >
+                  {parseFloat(perSecondToPerMonth(totalMatching).toFixed(2))}
+                </span>
+                <span className="w-25">monthly</span>
+              </div>
+              <div className="d-flex align-items-center gap-1">
+                <Image src={ethWhite} alt="usdc" width={8} className="py-1" />
+                <span
+                  className="w-75 rounded-1 px-1 bg-slate text-white"
+                  style={{
+                    background:
+                      "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
+                  }}
+                >
+                  {parseFloat(
+                    (perSecondToPerMonth(totalMatching) * 12).toFixed(2)
+                  )}{" "}
+                </span>
+                <span className="w-25"> total</span>
+              </div>
+            </Card.Body>
+          </Card>
+          <Card
+            className="position-absolute bg-blue text-white mt-4 px-2"
+            style={{ width: 340, bottom: 116 }}
+          >
             <Card.Header className="text-secondary border-purple px-0 py-1">
               Legend
             </Card.Header>
@@ -329,11 +431,15 @@ export default function Visualization() {
               <Card.Img
                 variant="start"
                 src={usdcWhite}
-                width={32}
+                width={30}
                 className="pe-1"
               />
               <Card.Text className="mb-0 me-3">
-                = {symbolsPerSecondToUsdc(symbolsPerSecond)} USDCx
+                ={" "}
+                {parseFloat(
+                  symbolsPerSecondToUsdc(symbolsPerSecond).toFixed(8)
+                )}{" "}
+                USDCx
               </Card.Text>
               <Card.Img
                 variant="start"
@@ -342,171 +448,97 @@ export default function Visualization() {
                 width={20}
               />
               <Card.Text className="mb-0">
-                = {symbolsPerSecondToEth(symbolsPerSecond)} ETHx
+                ={" "}
+                {symbolsPerSecondToEth(symbolsPerSecond)
+                  .toFixed(11)
+                  .replace(/\.?0+$/, "")}{" "}
+                ETHx
               </Card.Text>
             </Card.Body>
           </Card>
         </div>
         <svg width={dimensions.width} height={dimensions.height} ref={svgRef} />
         <div
-          className="d-flex flex-column text-white"
-          style={{ marginTop: 66, width: 220 }}
+          className="d-flex flex-column text-white position-relative"
+          style={{ width: 220, height: dimensions.height }}
         >
           {grantees.map((grantee, i) => (
             <div
-              className="border bg-blue border-0 rounded-end-2 px-1 py-1"
+              className="d-flex border bg-blue border-0 rounded-end-2 px-2 py-1"
               style={{
+                position: "absolute",
+                bottom: endYScale(i) + 30,
+                width: 220,
                 height: dimensions.pathHeight,
-                marginTop: i === 0 ? 0 : 25 + i / 4,
               }}
               key={i}
             >
-              {grantee}
-              <div className="d-flex align-items-center  gap-1 fs-6">
-                <div className="bg-primary w-33 rounded-1 px-1">
-                  {parseFloat(
-                    perSecondToPerMonth(
-                      (totalYou * dataset[0][grantee]) / 100
-                    ).toFixed(2)
-                  )}{" "}
-                </div>
-                <div className="bg-secondary w-33 rounded-1 px-1">
-                  {parseFloat(
-                    perSecondToPerMonth(
-                      (totalDirect * dataset[1][grantee]) / 100
-                    ).toFixed(2)
-                  )}{" "}
-                </div>
-                <div className="bg-info w-33 rounded-1 px-1">
-                  {parseFloat(
-                    perSecondToPerMonth(
-                      (totalMatching * dataset[2][grantee]) / 100
-                    ).toFixed(2)
-                  )}{" "}
-                </div>
-                monthly
-              </div>
-              {/*
-              <form
-                action="#"
-                className="d-flex mt-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const value = Number(e.target[1].value);
-                  const _dataset = [...dataset];
-                  _dataset.forEach((d) => console.log(d[grantees[i]]));
+              <Button
+                variant="success"
+                className="p-1 text-white"
+                onClick={() => {
+                  const value = 0.00001;
+                  const prevYou = dataset[0].weight;
+                  const percentIncrement = (value / totalNormalizedUsdc) * 100;
+                  const _totalNormalizedUsdc = value + totalNormalizedUsdc;
+                  const d = [...dataset];
+                  d[0].weight += percentIncrement;
+                  d[1].weight -= percentIncrement;
+                  d[2].you += percentIncrement * 2;
+
+                  const bottomRange = findBottomRange(_totalNormalizedUsdc);
+                  const topRange = bottomRange * 10;
+
+                  const symbolsPerSecond = amountToSymbolsPerSecond(
+                    _totalNormalizedUsdc,
+                    [bottomRange, topRange],
+                    [20, 60]
+                  );
+                  const symbolEnterInterval = MS_PER_SECOND / symbolsPerSecond;
+                  console.log(d[0].weight, symbolsPerSecond);
+
+                  timerId.restart(
+                    (elapsed) => enterSymbols(elapsed, d),
+                    symbolEnterInterval,
+                    timerStarted
+                  );
+                  setDataset(d);
+                  setTotalYou(totalYou + value);
+                  setSymbolsPerSecond(symbolsPerSecond);
                 }}
               >
-                <button>+</button>
-                <input className="w-50" type="text" />
-              </form>
-                */}
+                +
+              </Button>
+              <Container className="px-2">
+                <Row className="p-0">{grantee}</Row>
+                <Row className="d-flex align-items-center gap-1 fs-6 m-0 p-0">
+                  <Col className="bg-primary w-33 rounded-1 px-1">
+                    {parseFloat(
+                      perSecondToPerMonth(
+                        (totalYou * dataset[0][grantee]) / 100
+                      ).toFixed(2)
+                    )}{" "}
+                  </Col>
+                  <Col className="bg-secondary w-33 rounded-1 px-1">
+                    {parseFloat(
+                      perSecondToPerMonth(
+                        (totalDirect * dataset[1][grantee]) / 100
+                      ).toFixed(2)
+                    )}{" "}
+                  </Col>
+                  <Col className="bg-info w-33 rounded-1 px-1">
+                    {parseFloat(
+                      perSecondToPerMonth(
+                        (totalMatching * dataset[2][grantee]) / 100
+                      ).toFixed(2)
+                    )}{" "}
+                  </Col>
+                  monthly
+                </Row>
+              </Container>
             </div>
           ))}
         </div>
-      </div>
-      <div className="d-flex flex-column text-white">
-        <label>Symbol per second</label>
-        <input
-          type="number"
-          min="1"
-          max="60"
-          value={symbolsPerSecond}
-          onChange={(e) => {
-            const value = Number(e.target.value);
-            const msInterval = MS_PER_SECOND / value;
-            timerId.stop();
-            setTimerId(
-              d3.interval(
-                (elapsed) => enterSymbols(elapsed, dataset),
-                msInterval,
-                timerStarted
-              )
-            );
-            setSymbolsPerSecond(value);
-            setLegend({
-              usdc: symbolsPerSecondToUsdc(value),
-              eth: symbolsPerSecondToEth(value),
-            });
-          }}
-        />
-        <label>USDC per symbol</label>
-        <input
-          type="number"
-          min="66"
-          max="4000"
-          value={legend.usdc}
-          onChange={(e) => {
-            const value = Number(e.target.value);
-            const symbolsPerSecond = usdcToSymbolsPerSecond(value);
-            const msInterval = MS_PER_SECOND / symbolsPerSecond;
-            timerId.stop();
-            setTimerId(
-              d3.interval(
-                (elapsed) => enterSymbols(elapsed, dataset),
-                msInterval,
-                timerStarted
-              )
-            );
-            setSymbolsPerSecond(symbolsPerSecond);
-            setLegend({
-              usdc: value,
-              eth: symbolsPerSecondToEth(symbolsPerSecond),
-            });
-          }}
-        />
-        <label>ETH per symbol</label>
-        <input
-          type="number"
-          min="0.016"
-          max="2"
-          step="0.001"
-          value={legend.eth}
-          onChange={(e) => {
-            const value = Number(e.target.value);
-            const symbolsPerSecond = ethToSymbolsPerSecond(value);
-            const msInterval = MS_PER_SECOND / symbolsPerSecond;
-            timerId.stop();
-            setTimerId(
-              d3.interval(
-                (elapsed) => enterSymbols(elapsed, dataset),
-                msInterval,
-                timerStarted
-              )
-            );
-            setSymbolsPerSecond(symbolsPerSecond);
-            setLegend({
-              usdc: symbolsPerSecondToUsdc(symbolsPerSecond),
-              eth: value,
-            });
-          }}
-        />
-        <label>You (%)</label>
-        <input
-          type="number"
-          min="0.1"
-          max="100"
-          value={dataset[0].weight}
-          onChange={(e) => {
-            const value = Number(e.target.value);
-            const d = [...dataset];
-            d[0].weight = value;
-            d[1].weight = 100 - value;
-            d[2].you = value * 2;
-            timerId.stop();
-            setTimerId(
-              d3.interval(
-                (elapsed) => enterSymbols(elapsed, d),
-                symbolEnterInterval,
-                timerStarted
-              )
-            );
-            const _totalYou = totalNormalizedUsdc * (value / 100);
-            setTotalYou(_totalYou);
-            setTotalDirect(totalUsdc - _totalYou);
-            setDataset(d);
-          }}
-        />
       </div>
     </>
   );
