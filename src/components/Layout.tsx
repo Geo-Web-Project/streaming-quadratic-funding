@@ -8,7 +8,7 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <>
       <Header />
-      <main className="bg-purple pt-0">{children}</main>
+      <main className="pt-0">{children}</main>
     </>
   );
 }

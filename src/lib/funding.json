@@ -11,7 +11,7 @@
 },{
     "token": "usdc",
     "source": "direct",
-    "weight": 48,
+    "weight": 98,
     "Gov4Git": 2.4,
     "Open Source Observer": 8.9,
     "Avelous Hacking": 32.9,
@@ -21,7 +21,7 @@
 },{
     "token": "eth",
     "source": "matching",
-    "weight": 50,
+    "weight": 0,
     "you": 4,
     "Gov4Git": 2.4,
     "Open Source Observer": 8.9,
