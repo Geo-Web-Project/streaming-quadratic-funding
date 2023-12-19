@@ -13,3 +13,7 @@ export function weightedPick(items: any[], weights: number[]) {
 export function getRandomNumberInRange(min: number, max: number) {
   return Math.random() * (max - min) + min;
 }
+
+export function perSecondToPerMonth(amount: number) {
+  return amount * 2628000;
+}

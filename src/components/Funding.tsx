@@ -1,6 +1,10 @@
+import { useState } from "react";
 import Visualization from "./Visualization";
 
 export default function Funding() {
+  const [showTransactionPanel, setShowTransactionPanel] =
+    useState<boolean>(false);
+
   return (
     <>
       <div className="d-flex flex-column justify-content-stretch pt-2">
@@ -14,7 +18,10 @@ export default function Funding() {
           Beta Run - January 15 - April 15, 2024
         </p>
       </div>
-      <Visualization />
+      <Visualization
+        showTransactionPanel={showTransactionPanel}
+        setShowTransactionPanel={setShowTransactionPanel}
+      />
     </>
   );
 }

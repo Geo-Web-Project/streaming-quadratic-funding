@@ -1,0 +1,32 @@
+[
+    {
+        "name": "Gov4Git",
+        "description": "Gov4Git: Decentralized governance for collaborative communities...",
+        "perSecondRate": "4800000000000"
+    },
+    {
+        "name": "Open Source Observer",
+        "description": "We are cultivating a growing registry of open source software projects...",
+        "perSecondRate": "17800000000000"
+    },
+    {
+        "name": "Avelous Hacking",
+        "description": "1. Eth-Splitter https://app.buidlguidl.com/build...",
+        "perSecondRate": "65800000000000"
+    },
+    {
+        "name": "OpSci",
+        "description": "OpSci is an open source non-profit that builds community and develops...",
+        "perSecondRate": "24200000000000"
+    },
+    {
+        "name": "OpenCann",
+        "description": "Reshape the cannabis research landscape through decentralized...",
+        "perSecondRate": "22000000000000"
+    },
+    {
+        "name": "Blockscout",
+        "description": "Open-Source explorer are a vital public good Help Blockscout close...",
+        "perSecondRate": "65600000000000"
+    }
+]

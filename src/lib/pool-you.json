@@ -1,0 +1,26 @@
+[
+    {
+        "name": "Gov4Git",
+        "perSecondRate": "216000000000"
+    },
+    {
+        "name": "Open Source Observer",
+        "perSecondRate": "68400000000"
+    },
+    {
+        "name": "Avelous Hacking",
+        "perSecondRate": "1448000000000"
+    },
+    {
+        "name": "OpSci",
+        "perSecondRate": "640000000000"
+    },
+    {
+        "name": "OpenCann",
+        "perSecondRate": "372000000000"
+    },
+    {
+        "name": "Blockscout",
+        "perSecondRate": "636000000000"
+    }
+]

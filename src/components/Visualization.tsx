@@ -1,26 +1,73 @@
-// @ts-nocheck
-import * as d3 from "d3";
-import { useRef, useMemo, useLayoutEffect, useState, useEffect } from "react";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Container";
-import Col from "react-bootstrap/Container";
-import Card from "react-bootstrap/Card";
-import Button from "react-bootstrap/Button";
-import Image from "react-bootstrap/Image";
+import { useRef, useState, useMemo, useLayoutEffect, useEffect } from "react";
+import {
+  range,
+  scaleLinear,
+  line,
+  select,
+  selectAll,
+  curveMonotoneX,
+  merge,
+  now,
+  timer,
+  interval,
+  Timer,
+} from "d3";
+import { formatEther } from "viem";
+import FundingSources from "./FundingSources";
+import Grantees from "./Grantees";
+import ethLight from "../assets/eth-light.svg";
+import ethDark from "../assets/eth-dark.svg";
+import usdcLight from "../assets/usdc-light.svg";
+import usdcDark from "../assets/usdc-dark.svg";
+import poolYouJson from "../lib/pool-you.json";
+import poolDirectJson from "../lib/pool-direct.json";
+import poolMatchingJson from "../lib/pool-matching.json";
 import { weightedPick, getRandomNumberInRange } from "../lib/utils";
 import {
   MS_PER_SECOND,
-  VIZ_MAX_SYMBOLS,
   VIZ_ANIMATION_DURATION,
+  VIZ_CARD_WIDTH_SOURCE,
+  VIZ_CARD_WIDTH_GRANTEE,
 } from "../lib/constants";
-import ethLight from "../assets/eth-light.svg";
-import ethDark from "../assets/eth-dark.svg";
-import ethWhite from "../assets/eth-white.svg";
-import usdcLight from "../assets/usdc-light.svg";
-import usdcDark from "../assets/usdc-dark.svg";
-import usdcWhite from "../assets/usdc-white.svg";
-import jsonUsdc from "../lib/funding-usdc.json";
-import jsonEth from "../lib/funding-eth.json";
+
+interface VisualizationProps {
+  showTransactionPanel: boolean;
+  setShowTransactionPanel: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+interface Range {
+  start: number;
+  end: number;
+}
+
+interface Symbol {
+  id: number;
+  token: Token;
+  you: boolean;
+  source: Source;
+  grantee: string;
+  startTime: number;
+  yJitter: number;
+}
+
+interface Grantee {
+  name: string;
+  description?: string;
+  perSecondRate: string;
+}
+
+interface Dataset {
+  token: Token;
+  source: Source;
+  weight: number;
+  [key: string]: number;
+};
+
+export interface Dimensions {
+  width: number;
+  height: number;
+  pathHeight: number;
+}
 
 enum Source {
   YOU,
@@ -33,9 +80,11 @@ enum Token {
   ETH,
 }
 
-let lastSymbolId = 0;
-
-const symbols = [];
+const MAX_SYMBOLS = 512;
+const MIN_SYMBOLS_PER_SECOND = 20;
+const MAX_SYMBOLS_PER_SECOND = 60;
+const symbols: Symbol[] = [];
+const sources = ["you", "direct", "matching"];
 const grantees = [
   "Gov4Git",
   "Open Source Observer",
@@ -44,61 +93,55 @@ const grantees = [
   "OpenCann",
   "Blockscout",
 ];
-const sources = ["you", "direct", "matching"];
-const granteeIndexes = d3.range(grantees.length);
-const sourceIndexes = d3.range(sources.length);
+const granteeIndexes = range(grantees.length);
+const sourceIndexes = range(sources.length);
 
-export default function Visualization() {
-  const [datasetUsdc, setDatasetUsdc] = useState(jsonUsdc);
-  const [datasetEth, setDatasetEth] = useState(jsonEth);
-  const [timerSymbolsEth, setTimerSymbolsEth] = useState(null);
-  const [timerSymbolsUsdc, setTimerSymbolsUsdc] = useState(null);
-  const [timerStarted, setTimerStarted] = useState(null);
+let lastSymbolId = 0;
+
+export default function Visualization(props: VisualizationProps) {
+  const { showTransactionPanel, setShowTransactionPanel } = props;
+
+  const [datasetUsdc, setDatasetUsdc] = useState<Dataset[] | null>(null);
+  const [datasetEth, setDatasetEth] = useState<Dataset[] | null>(null);
+  const [poolYou, setPoolYou] = useState(poolYouJson);
+  const [poolDirect, setPoolDirect] = useState(poolDirectJson);
+  const [poolMatching, setPoolMatching] = useState(poolMatchingJson);
+  const [timerSymbolsEth, setTimerSymbolsEth] = useState<Timer | null>(null);
+  const [timerSymbolsUsdc, setTimerSymbolsUsdc] = useState<Timer | null>(null);
+  const [timerUpdateSymbols, setTimerUpdateSymbols] = useState<Timer | null>(
+    null
+  );
+  const [timerStarted, setTimerStarted] = useState<number>();
   const [symbolsPerSecondUsdc, setSymbolsPerSecondUsdc] = useState(0);
   const [symbolsPerSecondEth, setSymbolsPerSecondEth] = useState(0);
-  const [totalYou, setTotalYou] = useState(0.000004); // USDC
-  const [totalDirect, setTotalDirect] = useState(0.0002 - totalYou); // USDC
+  const [totalYou, setTotalYou] = useState(0); // USDCx
+  const [totalDirect, setTotalDirect] = useState(0); // USDCx
+  const [totalMatching, setTotalMatching] = useState(0); // ETHx
 
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const symbolsGroup = useRef(null);
+  const symbolsGroup = useRef<any>();
 
-  const totalUsdc = totalYou + totalDirect;
-  const totalMatching = totalUsdc / 2000; // ETH
-
-  const dimensions = {
-    width: window.screen.width / 3,
+  const dimensions: Dimensions = {
+    width: showTransactionPanel
+      ? window.screen.width / 3
+      : window.screen.width - (VIZ_CARD_WIDTH_SOURCE + VIZ_CARD_WIDTH_GRANTEE),
     height: window.screen.height > 1080 ? 1000 : 750,
-    margin: {
-      top: 0,
-      right: 0,
-      bottom: 10,
-      left: 0,
-    },
-    pathHeight: 80,
+    pathHeight: 90,
   };
-
-  dimensions.boundedWidth =
-    dimensions.width - dimensions.margin.left - dimensions.margin.right;
-  dimensions.boundedHeight =
-    dimensions.height - dimensions.margin.top - dimensions.margin.bottom;
 
   const { xScale, startYScale, endYScale, yTransitionProgressScale } =
     useMemo(() => {
-      const xScale = d3
-        .scaleLinear()
+      const xScale = scaleLinear()
         .domain([0, 1])
-        .range([0, dimensions.boundedWidth])
+        .range([0, dimensions.width])
         .clamp(true);
-      const startYScale = d3
-        .scaleLinear()
+      const startYScale = scaleLinear()
         .domain([-1, sourceIndexes.length])
-        .range([0, dimensions.boundedHeight]);
-      const endYScale = d3
-        .scaleLinear()
+        .range([0, dimensions.height]);
+      const endYScale = scaleLinear()
         .domain([-1, granteeIndexes.length])
-        .range([0, dimensions.boundedHeight]);
-      const yTransitionProgressScale = d3
-        .scaleLinear()
+        .range([0, dimensions.height]);
+      const yTransitionProgressScale = scaleLinear()
         .domain([0.45, 0.55])
         .range([0, 1])
         .clamp(true);
@@ -109,22 +152,18 @@ export default function Visualization() {
         endYScale,
         yTransitionProgressScale,
       };
-    }, []);
+    }, [showTransactionPanel]);
 
   useLayoutEffect(() => {
-    let _timerSymbolsUsdc = null;
-    let _timerSymbolsEth = null;
-
-    const svgElement = d3.select(svgRef.current);
+    const svgElement = select(svgRef.current);
     const bounds = svgElement
       .append("g")
       .style("transform", `translateY(-60px)`);
-    const linkLineGenerator = d3
-      .line()
-      .x((d, i) => i * (dimensions.boundedWidth / 5))
+    const linkLineGenerator = line()
+      .x((_d, i) => i * (dimensions.width / 5))
       .y((d, i) => (i <= 2 ? startYScale(d[0]) : endYScale(d[1])))
-      .curve(d3.curveMonotoneX);
-    const linkOptions = d3.merge(
+      .curve(curveMonotoneX);
+    const linkOptions = merge(
       sourceIndexes.map((startId) =>
         granteeIndexes.map((endId) => new Array(6).fill([startId, endId]))
       )
@@ -137,41 +176,110 @@ export default function Visualization() {
       .enter()
       .append("path")
       .attr("class", "grantee-path")
-      .attr("d", linkLineGenerator)
+      .attr("d", (d: any) => linkLineGenerator(d))
       .attr("stroke-width", dimensions.pathHeight);
 
     symbolsGroup.current = bounds.append("g").attr("class", "symbols-group");
 
-    const bottomRangeUsdc = findBottomRange(totalUsdc);
-    const topRangeUsdc = bottomRangeUsdc * 10;
-    const bottomRangeEth = findBottomRange(totalMatching);
-    const topRangeEth = bottomRangeEth * 10;
+    return () => {
+      bounds.remove();
+    };
+  }, [showTransactionPanel]);
 
-    const symbolsPerSecondUsdc = amountToSymbolsPerSecond(
-      totalUsdc,
-      [bottomRangeUsdc, topRangeUsdc],
-      [10, 30]
-    );
-    const symbolsPerSecondEth = amountToSymbolsPerSecond(
-      totalMatching,
-      [bottomRangeEth, topRangeEth],
-      [10, 30]
-    );
+  useEffect(() => {
+    let _timerSymbolsUsdc: Timer | null = null;
+    let _timerSymbolsEth: Timer | null = null;
+    let _timerUpdateSymbols: Timer | null = null;
 
+    const totalYou = calcTotalFlowRate(poolYou);
+    const totalDirect = calcTotalFlowRate(poolDirect);
+    const totalMatching = calcTotalFlowRate(poolMatching);
+    const totalUsdc = totalYou + totalDirect;
+    const datasetUsdc: Dataset[] = [
+      {
+        token: Token.USDC,
+        source: Source.YOU,
+        weight: totalYou / totalUsdc,
+      },
+      {
+        token: Token.USDC,
+        source: Source.DIRECT,
+        weight: totalDirect / totalUsdc,
+      },
+    ];
+    /* TODO: calculate actual weights for matching pool based on amount of units held by the user */
+    const datasetEth: Dataset[] = [
+      {
+        token: Token.ETH,
+        source: Source.YOU,
+        weight: totalYou / totalUsdc,
+      },
+      {
+        token: Token.ETH,
+        source: Source.MATCHING,
+        weight: totalDirect / totalUsdc,
+      },
+    ];
+
+    for (const grantee of poolYou) {
+      const weight =
+        Number(formatEther(BigInt(grantee.perSecondRate))) / totalYou;
+
+      datasetUsdc[0][grantee.name] = weight;
+      datasetEth[0][grantee.name] = weight;
+    }
+
+    for (const grantee of poolDirect) {
+      const weight =
+        Number(formatEther(BigInt(grantee.perSecondRate))) / totalDirect;
+
+      datasetUsdc[1][grantee.name] = weight;
+      datasetEth[1][grantee.name] = weight;
+    }
+
+    const symbolsPerSecondUsdc = amountToSymbolsPerSecond(totalUsdc);
+    const symbolsPerSecondEth = amountToSymbolsPerSecond(totalMatching);
+
+    if (timerSymbolsUsdc && timerSymbolsEth && timerUpdateSymbols) {
+      timerSymbolsUsdc.restart(
+        (elapsed) => enterSymbol(elapsed, datasetUsdc, Token.USDC),
+        MS_PER_SECOND / symbolsPerSecondUsdc,
+        timerStarted
+      );
+      timerSymbolsEth.restart(
+        (elapsed) => enterSymbol(elapsed, datasetEth, Token.ETH),
+        MS_PER_SECOND / symbolsPerSecondEth,
+        timerStarted
+      );
+      timerUpdateSymbols.restart(
+        (elapsed) => updateSymbols(elapsed),
+        0,
+        timerStarted
+      );
+    } else {
+      setTimerStarted(now());
+      _timerSymbolsUsdc = interval(
+        (elapsed) => enterSymbol(elapsed, datasetUsdc, Token.USDC),
+        MS_PER_SECOND / symbolsPerSecondUsdc
+      );
+      _timerSymbolsEth = interval(
+        (elapsed) => enterSymbol(elapsed, datasetEth, Token.ETH),
+        MS_PER_SECOND / symbolsPerSecondEth
+      );
+      _timerUpdateSymbols = timer(updateSymbols);
+
+      setTimerUpdateSymbols(_timerUpdateSymbols);
+      setTimerSymbolsUsdc(_timerSymbolsUsdc);
+      setTimerSymbolsEth(_timerSymbolsEth);
+    }
+
+    setDatasetUsdc(datasetUsdc);
+    setDatasetEth(datasetEth);
+    setTotalYou(totalYou);
+    setTotalDirect(totalDirect);
+    setTotalMatching(totalMatching);
     setSymbolsPerSecondUsdc(symbolsPerSecondUsdc);
     setSymbolsPerSecondEth(symbolsPerSecondEth);
-    setTimerStarted(d3.now());
-    _timerSymbolsUsdc = d3.interval(
-      (elapsed) => enterSymbol(elapsed, datasetUsdc, Token.USDC),
-      MS_PER_SECOND / symbolsPerSecondUsdc
-    );
-    _timerSymbolsEth = d3.interval(
-      (elapsed) => enterSymbol(elapsed, datasetEth, Token.ETH),
-      MS_PER_SECOND / symbolsPerSecondEth
-    );
-    setTimerSymbolsUsdc(_timerSymbolsUsdc);
-    setTimerSymbolsEth(_timerSymbolsEth);
-    d3.timer(updateSymbols);
 
     return () => {
       if (_timerSymbolsUsdc) {
@@ -182,75 +290,57 @@ export default function Visualization() {
         _timerSymbolsEth.stop();
       }
 
-      bounds.remove("g");
+      if (_timerUpdateSymbols) {
+        _timerUpdateSymbols.stop();
+      }
     };
-  }, []);
+  }, [poolYou, poolDirect, poolMatching, showTransactionPanel]);
 
-  const generateSymbolUsdc = (elapsed: number, dataset: any) => {
+  const generateSymbol = (elapsed: number, dataset: Dataset[], token: Token) => {
     const pick = weightedPick(
       dataset,
-      dataset.map((d) => d.weight)
+      dataset.map((d: any) => d.weight)
     );
-    const token = Token.USDC;
-    const source = pick.source === "you" ? Source.YOU : Source.DIRECT;
-    const weights = grantees.map((grantee, i) => pick[grantee]);
+    const source =
+      token === Token.USDC && pick.source === Source.YOU
+        ? Source.YOU
+        : token === Token.USDC
+        ? Source.DIRECT
+        : Source.MATCHING;
+    const weights = grantees.map((grantee: string) => pick[grantee]);
     const grantee = weightedPick(granteeIndexes, weights);
     const symbol = {
       id: lastSymbolId,
       token,
-      you: false,
+      you: token === Token.ETH && pick.source === Source.YOU,
       source,
       grantee,
       startTime: elapsed + getRandomNumberInRange(-0.1, 0.1),
       yJitter: getRandomNumberInRange(-15, 15),
     };
 
-    lastSymbolId = ++lastSymbolId & (VIZ_MAX_SYMBOLS - 1);
+    lastSymbolId = ++lastSymbolId & (MAX_SYMBOLS - 1);
 
     return symbol;
   };
 
-  const generateSymbolEth = (elapsed: number, dataset: any) => {
-    const pick = weightedPick(
-      dataset,
-      dataset.map((d) => d.weight)
-    );
-    const token = Token.ETH;
-    const source = Source.MATCHING;
-    const weights = grantees.map((grantee, i) => pick[grantee]);
-    const grantee = weightedPick(granteeIndexes, weights);
-    const symbol = {
-      id: lastSymbolId,
-      token,
-      you: pick.source === "you",
-      source,
-      grantee,
-      startTime: elapsed + getRandomNumberInRange(-0.1, 0.1),
-      yJitter: getRandomNumberInRange(-15, 15),
-    };
-
-    lastSymbolId = ++lastSymbolId & (VIZ_MAX_SYMBOLS - 1);
-
-    return symbol;
-  };
-
-  const updateSymbols = (elapsed) => {
-    const xProgressAccessor = (d) =>
-      (elapsed - d.startTime) / VIZ_ANIMATION_DURATION;
-    const usdcSymbols = symbolsGroup.current.selectAll(".usdc-symbol").data(
+  const updateSymbols = (elapsed: number) => {
+    const xProgressAccessor = (symbol: Symbol) =>
+      (elapsed - symbol.startTime) / VIZ_ANIMATION_DURATION;
+    const symbolsUsdc = symbolsGroup.current.selectAll(".usdc-symbol").data(
       symbols.filter((d) => xProgressAccessor(d) < 1 && d.token === Token.USDC),
-      (d) => d.id
+      (symbol: Symbol) => symbol.id
     );
-    const ethSymbols = symbolsGroup.current.selectAll(".eth-symbol").data(
+    const symbolsEth = symbolsGroup.current.selectAll(".eth-symbol").data(
       symbols.filter((d) => xProgressAccessor(d) < 1 && d.token === Token.ETH),
-      (d) => d.id
+      (symbol: Symbol) => symbol.id
     );
 
-    usdcSymbols.exit().remove();
-    ethSymbols.exit().remove();
+    symbolsUsdc.exit().remove();
+    symbolsEth.exit().remove();
 
-    d3.selectAll(".symbol")
-      .style("transform", (d) => {
+    selectAll(".symbol")
+      .style("transform", (d: any) => {
         const x = xScale(xProgressAccessor(d));
         const yStart = startYScale(d.source);
         const yEnd = endYScale(d.grantee);
@@ -261,25 +351,23 @@ export default function Visualization() {
       })
       .transition()
       .duration(50)
-      .style("opacity", (d) => (xScale(xProgressAccessor(d)) < 10 ? 0 : 1));
+      .style("opacity", (d: any) =>
+        xScale(xProgressAccessor(d)) < 10 ? 0 : 1
+      );
   };
 
-  const enterSymbol = (elapsed, dataset, token: Token) => {
-    symbols.push(
-      token === Token.USDC
-        ? generateSymbolUsdc(elapsed, dataset)
-        : generateSymbolEth(elapsed, dataset)
-    );
+  const enterSymbol = (elapsed: number, dataset: Dataset[], token: Token) => {
+    symbols.push(generateSymbol(elapsed, dataset, token));
 
     const symbol = symbols[symbols.length - 1];
-    const tokenSymbols = symbolsGroup.current
+    const entries = symbolsGroup.current
       .selectAll(token === Token.USDC ? ".usdc-symbol" : ".eth-symbol")
       .data(
-        symbols.filter((d) => d.token === token),
-        (d) => d.id
+        symbols.filter((d: any) => d.token === token),
+        (d: any) => d.id
       );
 
-    tokenSymbols
+    entries
       .enter()
       .append("svg:image")
       .attr(
@@ -302,251 +390,76 @@ export default function Visualization() {
       .attr("x", -10)
       .style("opacity", 0);
 
-    if (symbols.length > VIZ_MAX_SYMBOLS) {
-      symbols.splice(0, VIZ_MAX_SYMBOLS / 2);
+    if (symbols.length > MAX_SYMBOLS) {
+      symbols.splice(0, MAX_SYMBOLS / 2);
     }
   };
 
-  const perSecondToPerMonth = (amount) => amount * 2628000;
+  const mapAmountInRange = (
+    amount: number,
+    ranges: {
+      input: Range;
+      output: Range;
+    }
+  ) => {
+    const { output, input } = ranges;
+    const slope = (output.end - output.start) / (input.end - input.start);
 
-  const symbolsPerSecondToUsdc = (symbolsPerSecond) =>
-    totalUsdc /
-    (symbolsPerSecond *
-      ((datasetUsdc[0].weight + datasetUsdc[1].weight) / 100));
+    return output.start + slope * (amount - input.start);
+  };
 
-  const symbolsPerSecondToEth = (symbolsPerSecond) =>
-    totalMatching / symbolsPerSecond;
+  const amountToSymbolsPerSecond = (amount: number) => {
+    const startRange = findStartRange(amount);
+    const endRange = startRange * 10;
+    const symbolsPerSecond = mapAmountInRange(amount, {
+      input: { start: startRange, end: endRange },
+      output: {
+        start: MIN_SYMBOLS_PER_SECOND / 2,
+        end: MAX_SYMBOLS_PER_SECOND / 2,
+      },
+    });
 
-  const findBottomRange = (amount) =>
+    return symbolsPerSecond;
+  };
+
+  const findStartRange = (amount: number) =>
     Math.pow(10, Math.floor(Math.log10(amount)));
 
-  const amountToSymbolsPerSecond = (amount, inputRange, outputRange) => {
-    const slope =
-      (outputRange[1] - outputRange[0]) / (inputRange[1] - inputRange[0]);
-
-    return outputRange[0] + slope * (amount - inputRange[0]);
-  };
+  const calcTotalFlowRate = (pool: Grantee[]) =>
+    pool.reduce(
+      (acc: number, grantee: Grantee) =>
+        acc + Number(formatEther(BigInt(grantee.perSecondRate))),
+      0
+    );
 
   return (
     <>
       <div className="d-flex">
-        <div
-          className="text-white position-relative"
-          style={{ width: 160, height: dimensions.height }}
-        >
-          <Card
-            className="position-absolute bg-primary border-0 rounded-end-0 px-2 py-1 text-white"
-            style={{
-              top: startYScale(0) - 100,
-              width: 160,
-              height: dimensions.pathHeight,
-            }}
-          >
-            <Card.Title className="p-0 border-0 fs-3">You</Card.Title>
-            <Card.Body className="p-0 fs-6">
-              <div className="d-flex align-items-center gap-1">
-                <Image src={usdcWhite} alt="usdc" width={16} />
-                <span
-                  className="w-75 rounded-1 px-1 bg-primary text-white"
-                  style={{
-                    background:
-                      "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
-                  }}
-                >
-                  {parseFloat(perSecondToPerMonth(totalYou).toFixed(2))}
-                </span>
-                <span className="w-25">monthly</span>
-              </div>
-              <div className="d-flex align-items-center gap-1">
-                <Image src={usdcWhite} alt="usdc" width={16} />
-                <span
-                  className="w-75 rounded-1 px-1 bg-primary text-white"
-                  style={{
-                    background:
-                      "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
-                  }}
-                >
-                  {parseFloat((perSecondToPerMonth(totalYou) * 12).toFixed(2))}{" "}
-                </span>
-                <span className="w-25"> total</span>
-              </div>
-            </Card.Body>
-          </Card>
-          <Card
-            className="position-absolute bg-secondary border-0 rounded-end-0 px-2 py-1 text-white"
-            style={{
-              top: startYScale(1) - 100,
-              width: 160,
-              height: dimensions.pathHeight,
-            }}
-          >
-            <Card.Title className="p-0 border-0 fs-4 mb-3">
-              Direct Funders
-            </Card.Title>
-            <Card.Body className="p-0 fs-6">
-              <div className="d-flex align-items-center gap-1">
-                <Image src={usdcWhite} alt="usdc" width={16} />
-                <span
-                  className="w-75 rounded-1 px-1 bg-secondary text-white"
-                  style={{
-                    background:
-                      "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
-                  }}
-                >
-                  {parseFloat(perSecondToPerMonth(totalDirect).toFixed(2))}
-                </span>
-                <span className="w-25">monthly</span>
-              </div>
-              <div className="d-flex align-items-center gap-1">
-                <Image src={usdcWhite} alt="usdc" width={16} />
-                <span
-                  className="w-75 rounded-1 px-1 bg-secondary text-white"
-                  style={{
-                    background:
-                      "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
-                  }}
-                >
-                  {parseFloat(
-                    (perSecondToPerMonth(totalDirect) * 12).toFixed(2)
-                  )}{" "}
-                </span>
-                <span className="w-25"> total</span>
-              </div>
-            </Card.Body>
-          </Card>
-          <Card
-            className="position-absolute bg-slate border-0 rounded-end-0 px-2 py-1 text-white"
-            style={{
-              top: startYScale(2) - 100,
-              width: 160,
-              height: dimensions.pathHeight,
-            }}
-          >
-            <Card.Title className="p-0 border-0 fs-4 mb-3">
-              Quadratic Matching
-            </Card.Title>
-            <Card.Body className="p-0 fs-6">
-              <div className="d-flex align-items-center gap-1">
-                <Image src={ethWhite} alt="usdc" width={8} />
-                <span
-                  className="w-75 rounded-1 px-1 bg-slate text-white"
-                  style={{
-                    background:
-                      "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
-                  }}
-                >
-                  {parseFloat(perSecondToPerMonth(totalMatching).toFixed(2))}
-                </span>
-                <span className="w-25">monthly</span>
-              </div>
-              <div className="d-flex align-items-center gap-1">
-                <Image src={ethWhite} alt="usdc" width={8} className="py-1" />
-                <span
-                  className="w-75 rounded-1 px-1 bg-slate text-white"
-                  style={{
-                    background:
-                      "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
-                  }}
-                >
-                  {parseFloat(
-                    (perSecondToPerMonth(totalMatching) * 12).toFixed(2)
-                  )}{" "}
-                </span>
-                <span className="w-25"> total</span>
-              </div>
-            </Card.Body>
-          </Card>
-          <Card
-            className="position-absolute bg-blue text-white mt-4 px-2"
-            style={{ width: 340, bottom: 116 }}
-          >
-            <Card.Header className="text-secondary border-purple px-0 py-1">
-              Legend
-            </Card.Header>
-            <Card.Body className="d-flex align-items-center px-0 py-2 fs-5">
-              <Card.Img
-                variant="start"
-                src={usdcWhite}
-                width={30}
-                className="pe-1"
-              />
-              <Card.Text className="mb-0 me-3">
-                ={" "}
-                {parseFloat(
-                  symbolsPerSecondToUsdc(symbolsPerSecondUsdc).toFixed(8)
-                )}{" "}
-                USDCx
-              </Card.Text>
-              <Card.Img
-                variant="start"
-                className="m-0 p-0 pe-2"
-                src={ethWhite}
-                width={20}
-              />
-              <Card.Text className="mb-0">
-                ={" "}
-                {symbolsPerSecondToEth(symbolsPerSecondEth)
-                  .toFixed(11)
-                  .replace(/\.?0+$/, "")}{" "}
-                ETHx
-              </Card.Text>
-            </Card.Body>
-          </Card>
-        </div>
+        <FundingSources
+          dimensions={dimensions}
+          startYScale={startYScale}
+          symbolsPerSecondUsdc={symbolsPerSecondUsdc}
+          symbolsPerSecondEth={symbolsPerSecondEth}
+          totalYou={totalYou}
+          totalDirect={totalDirect}
+          totalMatching={totalMatching}
+        />
         <svg width={dimensions.width} height={dimensions.height} ref={svgRef} />
-        <div
-          className="d-flex flex-column text-white position-relative"
-          style={{ width: 220, height: dimensions.height }}
-        >
-          {grantees.map((grantee, i) => (
-            <div
-              className="d-flex border bg-blue border-0 rounded-end-2 px-2 py-1"
-              style={{
-                position: "absolute",
-                top: endYScale(i) - 100,
-                width: 220,
-                height: dimensions.pathHeight,
-              }}
-              key={i}
-            >
-              <Button
-                variant="success"
-                className="p-1 text-white"
-                onClick={() => {}}
-              >
-                +
-              </Button>
-              <Container className="px-2">
-                <Row className="p-0">{grantee}</Row>
-                <Row className="d-flex align-items-center gap-1 fs-6 m-0 p-0">
-                  <Col className="bg-primary w-33 rounded-1 px-1">
-                    {parseFloat(
-                      perSecondToPerMonth(
-                        (totalYou * datasetUsdc[0][grantee]) / 100
-                      ).toFixed(2)
-                    )}{" "}
-                  </Col>
-                  <Col className="bg-secondary w-33 rounded-1 px-1">
-                    {parseFloat(
-                      perSecondToPerMonth(
-                        (totalDirect * datasetUsdc[1][grantee]) / 100
-                      ).toFixed(2)
-                    )}{" "}
-                  </Col>
-                  <Col className="bg-info w-33 rounded-1 px-1">
-                    {parseFloat(
-                      perSecondToPerMonth(
-                        totalMatching * datasetEth[0][grantee] +
-                          (totalMatching * datasetEth[1][grantee]) / 100
-                      ).toFixed(2)
-                    )}{" "}
-                  </Col>
-                  monthly
-                </Row>
-              </Container>
-            </div>
-          ))}
-        </div>
+        {datasetUsdc && datasetEth && (
+          <Grantees
+            dimensions={dimensions}
+            endYScale={endYScale}
+            totalYou={totalYou}
+            totalDirect={totalDirect}
+            totalMatching={totalMatching}
+            datasetUsdc={datasetUsdc}
+            datasetEth={datasetEth}
+            grantees={grantees}
+            descriptions={poolDirect.map((elem) => elem.description)}
+            poolYou={poolYou}
+            setPoolYou={setPoolYou}
+          />
+        )}
       </div>
     </>
   );
