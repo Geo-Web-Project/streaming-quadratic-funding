@@ -122,12 +122,12 @@ export default function FundingSources(props: FundingSourcesProps) {
           height: dimensions.pathHeight,
         }}
       >
-        <div className="d-flex justify-content-around h-100 p-1 gap-2">
+        <div className="d-flex h-100 p-1 gap-2">
           <Button
             variant="success"
-            className="d-flex flex-column justify-center align-items-center p-0 fs-3 text-white fw-bold"
+            className="d-flex flex-column align-items-center p-0 fs-3 text-white fw-bold"
             onClick={() => {
-              setShowTransactionPanel((prev) => !prev);
+              setShowTransactionPanel(true);
             }}
           >
             <span style={{ transform: "translateY(40%)" }}>+</span>
@@ -138,7 +138,7 @@ export default function FundingSources(props: FundingSourcesProps) {
               style={{ transform: "translateY(-0%)" }}
             />
           </Button>
-          <div className="d-flex flex-column gap-2">
+          <div className="d-flex flex-column gap-2 ms-1">
             <Card.Header className="p-0 border-0 fs-4 lh-sm">
               Quadratic Matching
             </Card.Header>
@@ -154,7 +154,7 @@ export default function FundingSources(props: FundingSourcesProps) {
                 >
                   {parseFloat(perSecondToPerMonth(totalMatching).toFixed(2))}
                 </span>
-                <span className="w-25">monthly</span>
+                <span className="w-50">monthly</span>
               </div>
               <div className="d-flex align-items-center gap-1">
                 <Image src={ethWhite} alt="usdc" width={8} className="py-1" />
@@ -169,7 +169,7 @@ export default function FundingSources(props: FundingSourcesProps) {
                     (perSecondToPerMonth(totalMatching) * 12).toFixed(2)
                   )}{" "}
                 </span>
-                <span className="w-25"> total</span>
+                <span className="w-50"> total</span>
               </div>
             </Card.Body>
           </div>
@@ -177,7 +177,7 @@ export default function FundingSources(props: FundingSourcesProps) {
       </Card>
       <Card
         className="position-absolute bg-blue text-white mt-4 px-2"
-        style={{ width: 340, bottom: 106 }}
+        style={{ width: 340, bottom: window.screen.height < 1080 ? 106 : 126 }}
       >
         <Card.Header className="text-secondary border-purple px-0 py-1">
           Legend

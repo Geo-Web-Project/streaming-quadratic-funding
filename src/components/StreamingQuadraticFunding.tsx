@@ -10,9 +10,13 @@ export default function StreamingQuadraticFunding() {
     useState<boolean>(false);
 
   return (
-    <Container fluid className="m-0 p-0">
+    <Container fluid className="p-0">
       <Row>
-        <Col xs="4">{showTransactionPanel && <Fund />}</Col>
+        <Col xs="4">
+          {showTransactionPanel && (
+            <Fund setShowTransactionPanel={setShowTransactionPanel} />
+          )}
+        </Col>
         <Col xs={showTransactionPanel ? "8" : 0}>
           <div className="d-flex flex-column justify-content-stretch pt-2">
             <p className="d-flex fs-3 text-primary mb-0">
