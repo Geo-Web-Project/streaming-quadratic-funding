@@ -1,12 +1,14 @@
 import Card from "react-bootstrap/Card";
+import Button from "react-bootstrap/Button";
 import Image from "react-bootstrap/Image";
 import usdcWhite from "../assets/usdc-white.svg";
 import ethWhite from "../assets/eth-white.svg";
-import { Dimensions } from "./Visualization";
+import hand from "../assets/hand.svg";
+import { VisualizationProps, Dimensions } from "./Visualization";
 import { perSecondToPerMonth } from "../lib/utils";
 import { VIZ_CARD_WIDTH_SOURCE } from "../lib/constants";
 
-interface FundingSourcesProps {
+type FundingSourcesProps = VisualizationProps & {
   dimensions: Dimensions;
   startYScale: (n: number) => number;
   symbolsPerSecondUsdc: number;
@@ -14,7 +16,7 @@ interface FundingSourcesProps {
   totalYou: number;
   totalDirect: number;
   totalMatching: number;
-}
+};
 
 export default function FundingSources(props: FundingSourcesProps) {
   const {
@@ -25,6 +27,7 @@ export default function FundingSources(props: FundingSourcesProps) {
     totalYou,
     totalDirect,
     totalMatching,
+    setShowTransactionPanel,
   } = props;
 
   const totalUsdc = totalYou + totalDirect;
@@ -112,42 +115,65 @@ export default function FundingSources(props: FundingSourcesProps) {
         </Card.Body>
       </Card>
       <Card
-        className="position-absolute w-100 bg-slate border-0 rounded-end-0 px-2 py-1 text-white"
+        className="position-absolute w-100 bg-slate border-0 rounded-end-0 p-0 text-white"
         style={{
           top: startYScale(2) - 105,
           width: VIZ_CARD_WIDTH_SOURCE,
           height: dimensions.pathHeight,
         }}
       >
-        <Card.Header className="p-0 border-0 fs-4">
-          Quadratic Matching
-        </Card.Header>
-        <Card.Body className="d-flex flex-column justify-content-center p-0 fs-6">
-          <div className="d-flex align-items-center gap-1">
-            <Image src={ethWhite} alt="usdc" width={8} />
-            <span
-              className="w-75 rounded-1 px-1 bg-slate text-white"
-              style={{
-                background: "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
-              }}
-            >
-              {parseFloat(perSecondToPerMonth(totalMatching).toFixed(2))}
-            </span>
-            <span className="w-25">monthly</span>
+        <div className="d-flex justify-content-around h-100 p-1 gap-2">
+          <Button
+            variant="success"
+            className="d-flex flex-column justify-center align-items-center p-0 fs-3 text-white fw-bold"
+            onClick={() => {
+              setShowTransactionPanel((prev) => !prev);
+            }}
+          >
+            <span style={{ transform: "translateY(40%)" }}>+</span>
+            <Image
+              src={hand}
+              alt="hand"
+              width={26}
+              style={{ transform: "translateY(-0%)" }}
+            />
+          </Button>
+          <div className="d-flex flex-column gap-2">
+            <Card.Header className="p-0 border-0 fs-4 lh-sm">
+              Quadratic Matching
+            </Card.Header>
+            <Card.Body className="d-flex flex-column justify-content-center p-0 fs-6">
+              <div className="d-flex align-items-center gap-1">
+                <Image src={ethWhite} alt="usdc" width={8} />
+                <span
+                  className="w-75 rounded-1 px-1 bg-slate text-white"
+                  style={{
+                    background:
+                      "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
+                  }}
+                >
+                  {parseFloat(perSecondToPerMonth(totalMatching).toFixed(2))}
+                </span>
+                <span className="w-25">monthly</span>
+              </div>
+              <div className="d-flex align-items-center gap-1">
+                <Image src={ethWhite} alt="usdc" width={8} className="py-1" />
+                <span
+                  className="w-75 rounded-1 px-1 bg-slate text-white"
+                  style={{
+                    background:
+                      "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
+                  }}
+                >
+                  {parseFloat(
+                    (perSecondToPerMonth(totalMatching) * 12).toFixed(2)
+                  )}{" "}
+                </span>
+                <span className="w-25"> total</span>
+              </div>
+            </Card.Body>
           </div>
-          <div className="d-flex align-items-center gap-1">
-            <Image src={ethWhite} alt="usdc" width={8} className="py-1" />
-            <span
-              className="w-75 rounded-1 px-1 bg-slate text-white"
-              style={{
-                background: "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
-              }}
-            >
-              {parseFloat((perSecondToPerMonth(totalMatching) * 12).toFixed(2))}{" "}
-            </span>
-            <span className="w-25"> total</span>
-          </div>
-        </Card.Body>
+        </div>
       </Card>
       <Card
         className="position-absolute bg-blue text-white mt-4 px-2"

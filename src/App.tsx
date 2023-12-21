@@ -8,7 +8,7 @@ import { mainnet, optimism, optimismGoerli } from "wagmi/chains";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 import Layout from "./components/Layout";
-import Funding from "./components/Funding";
+import StreamingQuadraticFunding from "./components/StreamingQuadraticFunding";
 import "@rainbow-me/rainbowkit/styles.css";
 import "./App.scss";
 
@@ -42,7 +42,7 @@ function App() {
           theme={darkTheme()}
         >
           <Layout>
-            <Funding />
+            <StreamingQuadraticFunding />
           </Layout>
         </RainbowKitProvider>
       </WagmiConfig>

@@ -30,9 +30,15 @@ import {
   VIZ_CARD_WIDTH_GRANTEE,
 } from "../lib/constants";
 
-interface VisualizationProps {
+export interface VisualizationProps {
   showTransactionPanel: boolean;
   setShowTransactionPanel: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+export interface Dimensions {
+  width: number;
+  height: number;
+  pathHeight: number;
 }
 
 interface Range {
@@ -61,12 +67,6 @@ interface Dataset {
   source: Source;
   weight: number;
   [key: string]: number;
-};
-
-export interface Dimensions {
-  width: number;
-  height: number;
-  pathHeight: number;
 }
 
 enum Source {
@@ -296,7 +296,11 @@ export default function Visualization(props: VisualizationProps) {
     };
   }, [poolYou, poolDirect, poolMatching, showTransactionPanel]);
 
-  const generateSymbol = (elapsed: number, dataset: Dataset[], token: Token) => {
+  const generateSymbol = (
+    elapsed: number,
+    dataset: Dataset[],
+    token: Token
+  ) => {
     const pick = weightedPick(
       dataset,
       dataset.map((d: any) => d.weight)
@@ -443,6 +447,7 @@ export default function Visualization(props: VisualizationProps) {
           totalYou={totalYou}
           totalDirect={totalDirect}
           totalMatching={totalMatching}
+          {...props}
         />
         <svg width={dimensions.width} height={dimensions.height} ref={svgRef} />
         {datasetUsdc && datasetEth && (
