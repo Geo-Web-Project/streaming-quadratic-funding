@@ -125,18 +125,12 @@ export default function FundingSources(props: FundingSourcesProps) {
         <div className="d-flex h-100 p-1 gap-2">
           <Button
             variant="success"
-            className="d-flex flex-column align-items-center p-0 fs-3 text-white fw-bold"
+            className="d-flex flex-column justify-content-center p-0 fs-3 text-white fw-bold"
             onClick={() => {
               setShowTransactionPanel(true);
             }}
           >
-            <span style={{ transform: "translateY(40%)" }}>+</span>
-            <Image
-              src={hand}
-              alt="hand"
-              width={26}
-              style={{ transform: "translateY(-0%)" }}
-            />
+            <Image src={hand} alt="hand" width={26} />
           </Button>
           <div className="d-flex flex-column gap-2 ms-1">
             <Card.Header className="p-0 border-0 fs-4 lh-sm">
@@ -154,7 +148,7 @@ export default function FundingSources(props: FundingSourcesProps) {
                 >
                   {parseFloat(perSecondToPerMonth(totalMatching).toFixed(2))}
                 </span>
-                <span className="w-50">monthly</span>
+                <span className="w-25">monthly</span>
               </div>
               <div className="d-flex align-items-center gap-1">
                 <Image src={ethWhite} alt="usdc" width={8} className="py-1" />
@@ -169,7 +163,7 @@ export default function FundingSources(props: FundingSourcesProps) {
                     (perSecondToPerMonth(totalMatching) * 12).toFixed(2)
                   )}{" "}
                 </span>
-                <span className="w-50"> total</span>
+                <span className="w-25"> total</span>
               </div>
             </Card.Body>
           </div>

@@ -12,12 +12,12 @@ export default function StreamingQuadraticFunding() {
   return (
     <Container fluid className="p-0">
       <Row>
-        <Col xs="4">
+        <Col xs="3">
           {showTransactionPanel && (
             <Fund setShowTransactionPanel={setShowTransactionPanel} />
           )}
         </Col>
-        <Col xs={showTransactionPanel ? "8" : 0}>
+        <Col xs={showTransactionPanel ? "9" : 0}>
           <div className="d-flex flex-column justify-content-stretch pt-2">
             <p className="d-flex fs-3 text-primary mb-0">
               Streaming Quadratic Funding

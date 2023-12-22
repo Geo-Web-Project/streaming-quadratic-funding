@@ -121,11 +121,16 @@ export default function Visualization(props: VisualizationProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const symbolsGroup = useRef<any>();
 
+  const screenWidth = window.screen.width;
+  const screenHeight = window.screen.height;
   const dimensions: Dimensions = {
-    width: showTransactionPanel
-      ? window.screen.width / 3
-      : window.screen.width - (VIZ_CARD_WIDTH_SOURCE + VIZ_CARD_WIDTH_GRANTEE),
-    height: window.screen.height > 1080 ? 1000 : 750,
+    width:
+      showTransactionPanel && screenWidth > 1980
+        ? screenWidth / 2
+        : showTransactionPanel
+        ? screenWidth / 2.5
+        : screenWidth - (VIZ_CARD_WIDTH_SOURCE + VIZ_CARD_WIDTH_GRANTEE),
+    height: screenHeight > 1080 ? 1000 : 750,
     pathHeight: 90,
   };
 
@@ -257,7 +262,6 @@ export default function Visualization(props: VisualizationProps) {
         timerStarted
       );
     } else {
-      setTimerStarted(now());
       _timerSymbolsUsdc = interval(
         (elapsed) => enterSymbol(elapsed, datasetUsdc, Token.USDC),
         MS_PER_SECOND / symbolsPerSecondUsdc
@@ -268,6 +272,7 @@ export default function Visualization(props: VisualizationProps) {
       );
       _timerUpdateSymbols = timer(updateSymbols);
 
+      setTimerStarted(now());
       setTimerUpdateSymbols(_timerUpdateSymbols);
       setTimerSymbolsUsdc(_timerSymbolsUsdc);
       setTimerSymbolsEth(_timerSymbolsEth);

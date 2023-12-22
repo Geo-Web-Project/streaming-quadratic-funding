@@ -56,7 +56,7 @@ export default function Grantees(props: GranteesProps) {
         >
           <Button
             variant="success"
-            className="d-flex flex-column justify-center align-items-center p-0 fs-3 text-white fw-bold"
+            className="d-flex flex-column justify-content-center align-items-center p-0 fs-3 text-white fw-bold"
             onClick={() => {
               const _poolYou = [...poolYou];
               poolYou[i].perSecondRate = (
@@ -65,12 +65,10 @@ export default function Grantees(props: GranteesProps) {
               setPoolYou(_poolYou);
             }}
           >
-            <span style={{ transform: "translateY(40%)" }}>+</span>
             <Image
               src={hand}
               alt="hand"
               width={26}
-              style={{ transform: "translateY(-0%)" }}
             />
           </Button>
           <Container className="px-2">
