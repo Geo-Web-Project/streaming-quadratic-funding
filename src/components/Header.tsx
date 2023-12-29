@@ -2,7 +2,7 @@ import Navbar from "react-bootstrap/Navbar";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import ConnectWallet from "./ConnectWallet";
 
 export default function Header() {
   return (
@@ -13,11 +13,7 @@ export default function Header() {
             <h1 className="fs-2 ps-3">Streaming Quadratic Funding</h1>
           </Col>
           <Col xs="2" className="d-flex justify-content-end align-items-center">
-            <ConnectButton
-              label="Connect"
-              chainStatus="icon"
-              showBalance={false}
-            />
+            <ConnectWallet />
           </Col>
         </Row>
       </Container>

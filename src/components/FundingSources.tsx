@@ -43,7 +43,7 @@ export default function FundingSources(props: FundingSourcesProps) {
       style={{ width: VIZ_CARD_WIDTH_SOURCE, height: dimensions.height }}
     >
       <Card
-        className="position-absolute w-100 bg-primary border-0 rounded-end-0 px-2 py-0 text-white"
+        className="position-absolute w-100 bg-aqua border-0 rounded-end-0 px-2 py-0 text-white"
         style={{
           top: startYScale(0) - 105,
           height: dimensions.pathHeight,
@@ -54,7 +54,7 @@ export default function FundingSources(props: FundingSourcesProps) {
           <div className="d-flex align-items-center gap-1">
             <Image src={usdcWhite} alt="usdc" width={16} />
             <span
-              className="w-75 rounded-1 px-1 bg-primary text-white"
+              className="w-75 rounded-1 px-1 bg-aqua text-white"
               style={{
                 background: "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
               }}
@@ -66,7 +66,7 @@ export default function FundingSources(props: FundingSourcesProps) {
           <div className="d-flex align-items-center gap-1">
             <Image src={usdcWhite} alt="usdc" width={16} />
             <span
-              className="w-75 rounded-1 px-1 bg-primary text-white"
+              className="w-75 rounded-1 px-1 bg-aqua text-white"
               style={{
                 background: "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
               }}

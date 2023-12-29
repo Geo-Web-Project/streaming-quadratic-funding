@@ -13,11 +13,8 @@ import "@rainbow-me/rainbowkit/styles.css";
 import "./App.scss";
 
 const { chains, publicClient } = configureChains(
-  [mainnet, optimism, optimismGoerli],
-  [
-    alchemyProvider({ apiKey: import.meta.env.VITE_ALCHEMY_ID }),
-    publicProvider(),
-  ]
+  [optimism, optimismGoerli],
+  [alchemyProvider({ apiKey: import.meta.env.VITE_ALCHEMY_ID })]
 );
 
 const { connectors } = getDefaultWallets({

@@ -19,7 +19,7 @@ export default function StreamingQuadraticFunding() {
         </Col>
         <Col xs={showTransactionPanel ? "9" : 0}>
           <div className="d-flex flex-column justify-content-stretch pt-2">
-            <p className="d-flex fs-3 text-primary mb-0">
+            <p className="d-flex fs-3 text-aqua mb-0">
               Streaming Quadratic Funding
             </p>
             <p className="text-white fs-4 mb-1">

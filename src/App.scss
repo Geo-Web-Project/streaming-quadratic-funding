@@ -10,6 +10,7 @@ $h6-font-size: 9px;
 
 $primary: #2fc1c1;
 $secondary: #4b5588;
+$aqua: #008281;
 $dark: #202333;
 $blue: #111320;
 $purple: #1a1c28;
@@ -18,12 +19,13 @@ $gray: #b8b8be;
 $slate: #4c5f73;
 $danger: #dc3545;
 $light: #f8f9fa;
-$success: #04BC42;
+$success: #04bc42;
 $warning: #f7bdbd;
 
 $theme-colors: (
   "primary": $primary,
   "secondary": $secondary,
+  "aqua": $aqua,
   "dark": $dark,
   "blue": $blue,
   "purple": $purple,
@@ -35,6 +37,8 @@ $theme-colors: (
   "success": $success,
   "warning": $warning,
 );
+
+$input-placeholder-color: $info;
 
 @import "bootstrap/scss/bootstrap";
 @import "bootstrap/scss/utilities";

@@ -79,7 +79,7 @@ export default function Grantees(props: GranteesProps) {
               <Col className="p-0">{descriptions[i]}</Col>
             </Row>
             <Row className="d-flex align-items-center gap-1 fs-6 m-0 p-0">
-              <Col className="bg-primary w-33 rounded-1 px-1">
+              <Col className="bg-aqua w-33 rounded-1 px-1">
                 {parseFloat(
                   perSecondToPerMonth(
                     totalYou * datasetUsdc[0][grantee]
