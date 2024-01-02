@@ -1,14 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function useTransactionsQueue() {
   const [transactionError, setTransactionError] = useState("");
   const [areTransactionsLoading, setAreTransactionsLoading] = useState(false);
-  const [totalTransactions, setTotalTransactions] = useState(0);
   const [completedTransactions, setCompletedTransactions] = useState(0);
 
   const executeTransactions = async (transactions: (() => Promise<void>)[]) => {
     setAreTransactionsLoading(true);
-    setTotalTransactions(transactions.length);
+    setTransactionError("");
 
     try {
       for (const transaction of transactions) {
@@ -17,8 +16,10 @@ export default function useTransactionsQueue() {
         setCompletedTransactions((prev) => prev++);
       }
     } catch (err: any) {
-      console.error(err);
       setTransactionError(err.message);
+      setAreTransactionsLoading(false);
+
+      throw Error(err);
     }
 
     setAreTransactionsLoading(false);
@@ -27,7 +28,6 @@ export default function useTransactionsQueue() {
   return {
     areTransactionsLoading,
     completedTransactions,
-    totalTransactions,
     transactionError,
     executeTransactions,
   };

@@ -56,3 +56,20 @@ export function fromTimeUnitsToSeconds(units: number, type: string) {
 export function isNumber(value: string) {
   return !isNaN(Number(value)) && !isNaN(parseFloat(value));
 }
+
+export function truncateStr(str: string, strLen: number) {
+  if (str.length <= strLen) {
+    return str;
+  }
+
+  const separator = "...";
+
+  const sepLen = separator.length,
+    charsToShow = strLen - sepLen,
+    frontChars = Math.ceil(charsToShow / 2),
+    backChars = Math.floor(charsToShow / 2);
+
+  return (
+    str.substr(0, frontChars) + separator + str.substr(str.length - backChars)
+  );
+}
