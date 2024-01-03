@@ -61,7 +61,7 @@ export default function FundingSources(props: FundingSourcesProps) {
             >
               {parseFloat(perSecondToPerMonth(totalYou).toFixed(2))}
             </span>
-            <span className="w-25">monthly</span>
+            <span className="w-25">/month</span>
           </div>
           <div className="d-flex align-items-center gap-1">
             <Image src={usdcWhite} alt="usdc" width={16} />
@@ -98,7 +98,7 @@ export default function FundingSources(props: FundingSourcesProps) {
             >
               {parseFloat(perSecondToPerMonth(totalDirect).toFixed(2))}
             </span>
-            <span className="w-25">monthly</span>
+            <span className="w-25">/month</span>
           </div>
           <div className="d-flex align-items-center gap-1">
             <Image src={usdcWhite} alt="usdc" width={16} />
@@ -148,7 +148,7 @@ export default function FundingSources(props: FundingSourcesProps) {
                 >
                   {parseFloat(perSecondToPerMonth(totalMatching).toFixed(2))}
                 </span>
-                <span className="w-25">monthly</span>
+                <span className="w-25">/month</span>
               </div>
               <div className="d-flex align-items-center gap-1">
                 <Image src={ethWhite} alt="usdc" width={8} className="py-1" />

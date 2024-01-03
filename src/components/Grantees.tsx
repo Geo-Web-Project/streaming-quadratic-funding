@@ -65,11 +65,7 @@ export default function Grantees(props: GranteesProps) {
               setPoolYou(_poolYou);
             }}
           >
-            <Image
-              src={hand}
-              alt="hand"
-              width={26}
-            />
+            <Image src={hand} alt="hand" width={26} />
           </Button>
           <Container className="px-2">
             <Row className="p-0 fs-4">
@@ -100,7 +96,7 @@ export default function Grantees(props: GranteesProps) {
                   ).toFixed(2)
                 )}{" "}
               </Col>
-              monthly
+              /month
             </Row>
           </Container>
         </div>

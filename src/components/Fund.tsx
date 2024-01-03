@@ -89,8 +89,14 @@ export default function Fund(props: FundProps) {
         address,
         MATCHING_POOL_ADDRESS
       );
+      const currentMonthlyStream = roundWeiAmount(
+        BigInt(flowRateToReceiver) *
+          BigInt(fromTimeUnitsToSeconds(1, "months")),
+        8
+      );
 
       setFlowRateToReceiver(flowRateToReceiver);
+      setAmountPerTimeUnit(currentMonthlyStream);
     })();
   }, [address, superToken]);
 
@@ -118,17 +124,15 @@ export default function Fund(props: FundProps) {
       return;
     }
 
-    let newFlowRate =
+    const newFlowRate =
       parseEther(amountPerTimeUnit) /
       BigInt(fromTimeUnitsToSeconds(1, "months"));
-
     const transactions =
       wrapAmount && Number(wrapAmount) > 0
         ? [async () => wrap(parseEther(wrapAmount))]
         : [];
 
     if (BigInt(flowRateToReceiver) !== BigInt(0)) {
-      newFlowRate = BigInt(flowRateToReceiver) + newFlowRate;
       transactions.push(async () =>
         updateFlow(address, MATCHING_POOL_ADDRESS, newFlowRate.toString())
       );
@@ -142,6 +146,9 @@ export default function Fund(props: FundProps) {
 
     setStep(Step.SUCCESS);
   };
+
+  const roundWeiAmount = (flowRate: bigint, digits: number) =>
+    parseFloat(Number(formatEther(flowRate)).toFixed(digits)).toString();
 
   return (
     <Stack
@@ -172,13 +179,10 @@ export default function Fund(props: FundProps) {
           </Card.Subtitle>
           <Card.Body className="d-flex align-items-center gap-2 p-0">
             <Card.Text as="span" className="fs-1">
-              {parseFloat(
-                Number(
-                  formatEther(
-                    BigInt(flowRateToReceiver) *
-                      BigInt(fromTimeUnitsToSeconds(1, "months"))
-                  )
-                ).toFixed(6)
+              {roundWeiAmount(
+                BigInt(flowRateToReceiver) *
+                  BigInt(fromTimeUnitsToSeconds(1, "months")),
+                6
               )}
             </Card.Text>
             <Card.Text as="span" className="fs-6">
@@ -286,7 +290,7 @@ export default function Fund(props: FundProps) {
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     handleAmountSelection(e, setAmountPerTimeUnit)
                   }
-                  className="bg-blue w-50 border-0 rounded-end-0 text-white"
+                  className="bg-blue w-50 border-0 rounded-end-0 text-white shadow-none"
                 />
                 <Dropdown className="w-50">
                   <Dropdown.Toggle
@@ -297,7 +301,7 @@ export default function Fund(props: FundProps) {
                   </Dropdown.Toggle>
                   {/* TODO: handle other time units beside months */}
                   <Dropdown.Menu variant="dark" className="bg-blue">
-                    <Dropdown.Item className="text-white">Months</Dropdown.Item>
+                    <Dropdown.Item className="text-white">/month</Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
               </Stack>
@@ -416,10 +420,9 @@ export default function Fund(props: FundProps) {
                 disabled={
                   !ethBalance ||
                   ethBalance.value === BigInt(0) ||
+                  ethBalance.value < parseEther(wrapAmount ?? "0") ||
                   (superTokenBalance <= BigInt(0) &&
-                    (!wrapAmount ||
-                      Number(wrapAmount) === 0 ||
-                      ethBalance.value < parseEther(wrapAmount)))
+                    (!wrapAmount || Number(wrapAmount) === 0))
                 }
                 className="py-1 rounded-3 text-white"
                 onClick={() => setStep(Step.REVIEW)}
@@ -568,18 +571,15 @@ export default function Fund(props: FundProps) {
                 <Stack direction="horizontal" gap={1} className="w-50 ms-1">
                   <Image src={ETHLogo} alt="eth" width={16} />
                   <Badge className="bg-aqua w-100 ps-2 pe-2 py-2 fs-4 text-start">
-                    {parseFloat(
-                      Number(
-                        formatEther(
-                          BigInt(flowRateToReceiver) *
-                            BigInt(fromTimeUnitsToSeconds(1, "months")) +
-                            parseEther(amountPerTimeUnit)
-                        )
-                      ).toFixed(8)
+                    {roundWeiAmount(
+                      BigInt(flowRateToReceiver) *
+                        BigInt(fromTimeUnitsToSeconds(1, "months")) +
+                        parseEther(amountPerTimeUnit),
+                      8
                     )}
                   </Badge>
                 </Stack>
-                <Card.Text className="m-0 ms-1 fs-5">monthly</Card.Text>
+                <Card.Text className="m-0 ms-1 fs-5">/month</Card.Text>
               </Stack>
             </Stack>
             <Button
