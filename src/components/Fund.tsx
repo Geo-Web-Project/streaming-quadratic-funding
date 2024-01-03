@@ -40,13 +40,30 @@ enum Step {
   SUCCESS = "Success!",
 }
 
+enum TimeInterval {
+  DAY = "/day",
+  WEEK = "/week",
+  MONTH = "/month",
+  YEAR = "/year",
+}
+
+const unitOfTime = {
+  [TimeInterval.DAY]: "days",
+  [TimeInterval.WEEK]: "weeks",
+  [TimeInterval.MONTH]: "months",
+  [TimeInterval.YEAR]: "years",
+};
+
 export default function Fund(props: FundProps) {
   const { setShowTransactionPanel } = props;
 
   const [wrapAmount, setWrapAmount] = useState<string | null>(null);
   const [step, setStep] = useState(Step.SELECT_AMOUNT);
-  const [amountPerTimeUnit, setAmountPerTimeUnit] = useState("");
-  const [flowRateToReceiver, setFlowRateToReceiver] = useState("0");
+  const [amountPerTimeInterval, setAmountPerTimeInterval] = useState("");
+  const [flowRateToReceiver, setFlowRateToReceiver] = useState("");
+  const [timeInterval, setTimeInterval] = useState<TimeInterval>(
+    TimeInterval.MONTH
+  );
 
   const { chain } = useNetwork();
   const { address } = useAccount();
@@ -89,22 +106,22 @@ export default function Fund(props: FundProps) {
         address,
         MATCHING_POOL_ADDRESS
       );
-      const currentMonthlyStream = roundWeiAmount(
+      const currentStreamValue = roundWeiAmount(
         BigInt(flowRateToReceiver) *
-          BigInt(fromTimeUnitsToSeconds(1, "months")),
+          BigInt(fromTimeUnitsToSeconds(1, unitOfTime[timeInterval])),
         8
       );
 
       setFlowRateToReceiver(flowRateToReceiver);
-      setAmountPerTimeUnit(currentMonthlyStream);
+      setAmountPerTimeInterval(currentStreamValue);
     })();
   }, [address, superToken]);
 
   useEffect(() => {
-    if (amountPerTimeUnit) {
-      setWrapAmount(formatEther(parseEther(amountPerTimeUnit) * BigInt(3)));
+    if (amountPerTimeInterval) {
+      setWrapAmount(formatEther(parseEther(amountPerTimeInterval) * BigInt(3)));
     }
-  }, [amountPerTimeUnit]);
+  }, [amountPerTimeInterval]);
 
   const handleAmountSelection = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -125,8 +142,8 @@ export default function Fund(props: FundProps) {
     }
 
     const newFlowRate =
-      parseEther(amountPerTimeUnit) /
-      BigInt(fromTimeUnitsToSeconds(1, "months"));
+      parseEther(amountPerTimeInterval) /
+      BigInt(fromTimeUnitsToSeconds(1, unitOfTime[timeInterval]));
     const transactions =
       wrapAmount && Number(wrapAmount) > 0
         ? [async () => wrap(parseEther(wrapAmount))]
@@ -149,6 +166,17 @@ export default function Fund(props: FundProps) {
 
   const roundWeiAmount = (flowRate: bigint, digits: number) =>
     parseFloat(Number(formatEther(flowRate)).toFixed(digits)).toString();
+
+  const convertStreamValueToInterval = (
+    amount: bigint,
+    from: TimeInterval,
+    to: TimeInterval
+  ) =>
+    roundWeiAmount(
+      (amount / BigInt(fromTimeUnitsToSeconds(1, unitOfTime[from]))) *
+        BigInt(fromTimeUnitsToSeconds(1, unitOfTime[to])),
+      6
+    );
 
   return (
     <Stack
@@ -178,18 +206,33 @@ export default function Fund(props: FundProps) {
             Your Current Stream
           </Card.Subtitle>
           <Card.Body className="d-flex align-items-center gap-2 p-0">
-            <Card.Text as="span" className="fs-1">
-              {roundWeiAmount(
-                BigInt(flowRateToReceiver) *
-                  BigInt(fromTimeUnitsToSeconds(1, "months")),
-                6
-              )}
-            </Card.Text>
-            <Card.Text as="span" className="fs-6">
-              ETHx <br />
-              per <br />
-              month
-            </Card.Text>
+            {flowRateToReceiver ? (
+              <>
+                <Card.Text as="span" className="fs-1">
+                  {roundWeiAmount(
+                    BigInt(flowRateToReceiver) *
+                      BigInt(
+                        fromTimeUnitsToSeconds(
+                          1,
+                          unitOfTime[TimeInterval.MONTH]
+                        )
+                      ),
+                    6
+                  )}
+                </Card.Text>
+                <Card.Text as="span" className="fs-6">
+                  ETHx <br />
+                  per <br />
+                  month
+                </Card.Text>
+              </>
+            ) : (
+              <Spinner
+                animation="border"
+                role="status"
+                className="mx-auto mt-3 p-3"
+              ></Spinner>
+            )}
           </Card.Body>
         </Card>
       </Stack>
@@ -285,10 +328,10 @@ export default function Fund(props: FundProps) {
                 <Form.Control
                   type="text"
                   placeholder="0"
-                  disabled={!address}
-                  value={amountPerTimeUnit}
+                  disabled={!address || !flowRateToReceiver}
+                  value={amountPerTimeInterval}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    handleAmountSelection(e, setAmountPerTimeUnit)
+                    handleAmountSelection(e, setAmountPerTimeInterval)
                   }
                   className="bg-blue w-50 border-0 rounded-end-0 text-white shadow-none"
                 />
@@ -297,11 +340,69 @@ export default function Fund(props: FundProps) {
                     variant="blue"
                     className="d-flex justify-content-between align-items-center w-100 border-0 rounded-start-0 fs-4"
                   >
-                    /month
+                    {timeInterval}
                   </Dropdown.Toggle>
-                  {/* TODO: handle other time units beside months */}
                   <Dropdown.Menu variant="dark" className="bg-blue">
-                    <Dropdown.Item className="text-white">/month</Dropdown.Item>
+                    <Dropdown.Item
+                      className="text-white"
+                      onClick={() => {
+                        setAmountPerTimeInterval(
+                          convertStreamValueToInterval(
+                            parseEther(amountPerTimeInterval),
+                            timeInterval,
+                            TimeInterval.DAY
+                          )
+                        );
+                        setTimeInterval(TimeInterval.DAY);
+                      }}
+                    >
+                      {TimeInterval.DAY}
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      className="text-white"
+                      onClick={() => {
+                        setAmountPerTimeInterval(
+                          convertStreamValueToInterval(
+                            parseEther(amountPerTimeInterval),
+                            timeInterval,
+                            TimeInterval.WEEK
+                          )
+                        );
+                        setTimeInterval(TimeInterval.WEEK);
+                      }}
+                    >
+                      {TimeInterval.WEEK}
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      className="text-white"
+                      onClick={() => {
+                        setAmountPerTimeInterval(
+                          convertStreamValueToInterval(
+                            parseEther(amountPerTimeInterval),
+                            timeInterval,
+                            TimeInterval.MONTH
+                          )
+                        );
+                        setTimeInterval(TimeInterval.MONTH);
+                      }}
+                    >
+                      {TimeInterval.MONTH}
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      className="text-white"
+                      onClick={() => {
+                        setAmountPerTimeInterval(
+                          convertStreamValueToInterval(
+                            parseEther(amountPerTimeInterval),
+                            timeInterval,
+                            TimeInterval.YEAR
+                          )
+                        );
+                        setTimeInterval(TimeInterval.YEAR);
+                      }}
+                    >
+                      {TimeInterval.YEAR}
+                    </Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
               </Stack>
@@ -309,7 +410,7 @@ export default function Fund(props: FundProps) {
                 <Button
                   variant="success"
                   disabled={
-                    !amountPerTimeUnit || Number(amountPerTimeUnit) <= 0
+                    !amountPerTimeInterval || Number(amountPerTimeInterval) <= 0
                   }
                   className="py-1 rounded-3 text-white"
                   onClick={() => setStep(Step.WRAP)}
@@ -363,7 +464,7 @@ export default function Fund(props: FundProps) {
                     placeholder="0"
                     disabled={!address}
                     value={wrapAmount ?? ""}
-                    className="bg-blue w-75 border-0 text-white"
+                    className="bg-blue w-75 border-0 text-white shadow-none"
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       handleAmountSelection(e, setWrapAmount)
                     }
@@ -396,9 +497,9 @@ export default function Fund(props: FundProps) {
                     disabled={!address}
                     value={
                       wrapAmount ??
-                      formatEther(parseEther(amountPerTimeUnit) * BigInt(3))
+                      formatEther(parseEther(amountPerTimeInterval) * BigInt(3))
                     }
-                    className="bg-blue w-75 border-0 text-white"
+                    className="bg-blue w-75 border-0 text-white shadow-none"
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       handleAmountSelection(e, setWrapAmount)
                     }
@@ -419,10 +520,9 @@ export default function Fund(props: FundProps) {
                 variant="success"
                 disabled={
                   !ethBalance ||
-                  ethBalance.value === BigInt(0) ||
-                  ethBalance.value < parseEther(wrapAmount ?? "0") ||
                   (superTokenBalance <= BigInt(0) &&
-                    (!wrapAmount || Number(wrapAmount) === 0))
+                    (!wrapAmount || Number(wrapAmount) === 0)) ||
+                  ethBalance.value < parseEther(wrapAmount ?? "0")
                 }
                 className="py-1 rounded-3 text-white"
                 onClick={() => setStep(Step.REVIEW)}
@@ -571,11 +671,10 @@ export default function Fund(props: FundProps) {
                 <Stack direction="horizontal" gap={1} className="w-50 ms-1">
                   <Image src={ETHLogo} alt="eth" width={16} />
                   <Badge className="bg-aqua w-100 ps-2 pe-2 py-2 fs-4 text-start">
-                    {roundWeiAmount(
-                      BigInt(flowRateToReceiver) *
-                        BigInt(fromTimeUnitsToSeconds(1, "months")) +
-                        parseEther(amountPerTimeUnit),
-                      8
+                    {convertStreamValueToInterval(
+                      parseEther(amountPerTimeInterval),
+                      timeInterval,
+                      TimeInterval.MONTH
                     )}
                   </Badge>
                 </Stack>
