@@ -163,7 +163,7 @@ export default function FundingSources(props: FundingSourcesProps) {
                     (perSecondToPerMonth(totalMatching) * 12).toFixed(2)
                   )}{" "}
                 </span>
-                <span className="w-25"> total</span>
+                <span className="w-25">total</span>
               </div>
             </Card.Body>
           </div>

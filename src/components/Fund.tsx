@@ -34,7 +34,7 @@ interface FundProps {
 }
 
 enum Step {
-  SELECT_AMOUNT = "Select network and token",
+  SELECT_AMOUNT = "Edit stream",
   WRAP = "Wrap to Super Tokens",
   REVIEW = "Review the transaction(s)",
   SUCCESS = "Success!",
@@ -244,14 +244,14 @@ export default function Fund(props: FundProps) {
         <Card className="bg-blue text-white border-0 rounded-0">
           <Button
             variant="transparent"
-            className="d-flex gap-2 p-2 border-0 text-white shadow-none"
+            className="d-flex align-items-center gap-2 p-2 border-0 text-white shadow-none"
             onClick={() => setStep(Step.SELECT_AMOUNT)}
             style={{ borderBottom: "1px dashed #31374E" }}
           >
             <Badge
               pill
               as="div"
-              className="d-flex align-items-center px-1 py-0 bg-aqua"
+              className="d-flex align-items-center p-1 bg-aqua"
             >
               {step !== Step.SELECT_AMOUNT ? (
                 <Image src={DoneIcon} alt="done" width={16} />
@@ -322,14 +322,14 @@ export default function Fund(props: FundProps) {
           <Button
             variant="transparent"
             disabled={step === Step.SELECT_AMOUNT}
-            className="d-flex gap-2 p-2 border-0 text-white shadow-none"
+            className="d-flex align-items-center gap-2 p-2 border-0 text-white shadow-none"
             onClick={() => setStep(Step.WRAP)}
             style={{ borderBottom: "1px dashed #31374E" }}
           >
             <Badge
               pill
               as="div"
-              className={`d-flex align-items-center py-0
+              className={`d-flex align-items-center py-1
                     ${
                       step === Step.SELECT_AMOUNT ? "bg-secondary" : "bg-aqua"
                     } ${step === Step.REVIEW ? "px-1" : ""}`}
@@ -416,7 +416,10 @@ export default function Fund(props: FundProps) {
                 disabled={
                   !ethBalance ||
                   ethBalance.value === BigInt(0) ||
-                  superTokenBalance <= BigInt(0)
+                  (superTokenBalance <= BigInt(0) &&
+                    (!wrapAmount ||
+                      Number(wrapAmount) === 0 ||
+                      ethBalance.value < parseEther(wrapAmount)))
                 }
                 className="py-1 rounded-3 text-white"
                 onClick={() => setStep(Step.REVIEW)}
@@ -430,13 +433,13 @@ export default function Fund(props: FundProps) {
           <Button
             variant="transparent"
             disabled={step === Step.SELECT_AMOUNT || step === Step.WRAP}
-            className="d-flex gap-2 p-2 border-0 text-white shadow-none"
+            className="d-flex align-items-center gap-2 p-2 border-0 text-white shadow-none"
             onClick={() => setStep(Step.REVIEW)}
             style={{ borderBottom: "1px dashed #31374E" }}
           >
             <Badge
               pill
-              className={`d-flex align-items-center py-0 ${
+              className={`d-flex align-items-center py-1 ${
                 step !== Step.REVIEW ? "bg-secondary" : "bg-aqua"
               } ${step === Step.SUCCESS ? "px-1" : ""}`}
             >
