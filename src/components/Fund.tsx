@@ -11,6 +11,8 @@ import Image from "react-bootstrap/Image";
 import Badge from "react-bootstrap/Badge";
 import Spinner from "react-bootstrap/Spinner";
 import Alert from "react-bootstrap/Alert";
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import Tooltip from "react-bootstrap/Tooltip";
 import ConnectWallet from "./ConnectWallet";
 import XLogo from "../assets/x-logo.svg";
 import WebIcon from "../assets/web.svg";
@@ -35,7 +37,7 @@ interface FundProps {
 
 enum Step {
   SELECT_AMOUNT = "Edit stream",
-  WRAP = "Wrap to Super Tokens",
+  WRAP = "Wrap to Super Token",
   REVIEW = "Review the transaction(s)",
   SUCCESS = "Success!",
 }
@@ -109,7 +111,7 @@ export default function Fund(props: FundProps) {
       const currentStreamValue = roundWeiAmount(
         BigInt(flowRateToReceiver) *
           BigInt(fromTimeUnitsToSeconds(1, unitOfTime[timeInterval])),
-        8
+        4
       );
 
       setFlowRateToReceiver(flowRateToReceiver);
@@ -175,7 +177,7 @@ export default function Fund(props: FundProps) {
     roundWeiAmount(
       (amount / BigInt(fromTimeUnitsToSeconds(1, unitOfTime[from]))) *
         BigInt(fromTimeUnitsToSeconds(1, unitOfTime[to])),
-      6
+      4
     );
 
   return (
@@ -206,7 +208,13 @@ export default function Fund(props: FundProps) {
             Your Current Stream
           </Card.Subtitle>
           <Card.Body className="d-flex align-items-center gap-2 p-0">
-            {flowRateToReceiver ? (
+            {address && !flowRateToReceiver ? (
+              <Spinner
+                animation="border"
+                role="status"
+                className="mx-auto mt-3 p-3"
+              ></Spinner>
+            ) : (
               <>
                 <Card.Text as="span" className="fs-1">
                   {roundWeiAmount(
@@ -217,7 +225,7 @@ export default function Fund(props: FundProps) {
                           unitOfTime[TimeInterval.MONTH]
                         )
                       ),
-                    6
+                    4
                   )}
                 </Card.Text>
                 <Card.Text as="span" className="fs-6">
@@ -226,12 +234,6 @@ export default function Fund(props: FundProps) {
                   month
                 </Card.Text>
               </>
-            ) : (
-              <Spinner
-                animation="border"
-                role="status"
-                className="mx-auto mt-3 p-3"
-              ></Spinner>
             )}
           </Card.Body>
         </Card>
@@ -516,19 +518,47 @@ export default function Fund(props: FundProps) {
                   Balance: {formatEther(superTokenBalance).slice(0, 8)}
                 </Card.Text>
               </Stack>
-              <Button
-                variant="success"
-                disabled={
-                  !ethBalance ||
-                  (superTokenBalance <= BigInt(0) &&
-                    (!wrapAmount || Number(wrapAmount) === 0)) ||
-                  ethBalance.value < parseEther(wrapAmount ?? "0")
-                }
-                className="py-1 rounded-3 text-white"
-                onClick={() => setStep(Step.REVIEW)}
-              >
-                Continue
-              </Button>
+              {ethBalance &&
+                wrapAmount &&
+                ethBalance.value < parseEther(wrapAmount) && (
+                  <Alert variant="danger" className="m-0">
+                    Insufficient Balance
+                  </Alert>
+                )}
+              <Stack direction="horizontal" gap={2}>
+                <OverlayTrigger
+                  overlay={
+                    <Tooltip id="t-skip-wrap" className="fs-6">
+                      You must have enough ETHx to continue
+                    </Tooltip>
+                  }
+                >
+                  <Button
+                    variant="primary"
+                    disabled={superTokenBalance <= BigInt(0)}
+                    className="w-50 py-1 rounded-3 text-white"
+                    onClick={() => {
+                      setWrapAmount("");
+                      setStep(Step.REVIEW);
+                    }}
+                  >
+                    Skip
+                  </Button>
+                </OverlayTrigger>
+                <Button
+                  variant="success"
+                  disabled={
+                    !ethBalance ||
+                    !wrapAmount ||
+                    Number(wrapAmount) === 0 ||
+                    ethBalance.value < parseEther(wrapAmount)
+                  }
+                  className="w-50 py-1 rounded-3 text-white"
+                  onClick={() => setStep(Step.REVIEW)}
+                >
+                  Continue
+                </Button>
+              </Stack>
             </Stack>
           </Accordion.Collapse>
         </Card>
