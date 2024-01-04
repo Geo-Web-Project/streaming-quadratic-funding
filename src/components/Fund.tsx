@@ -98,25 +98,7 @@ export default function Fund(props: FundProps) {
   const totalTransactions = Number(wrapAmount) > 0 ? 2 : 1;
 
   useEffect(() => {
-    (async () => {
-      if (!address || !superToken) {
-        return;
-      }
-
-      const { flowRate: flowRateToReceiver } = await getFlow(
-        superToken,
-        address,
-        MATCHING_POOL_ADDRESS
-      );
-      const currentStreamValue = roundWeiAmount(
-        BigInt(flowRateToReceiver) *
-          BigInt(fromTimeUnitsToSeconds(1, unitOfTime[timeInterval])),
-        4
-      );
-
-      setFlowRateToReceiver(flowRateToReceiver);
-      setAmountPerTimeInterval(currentStreamValue);
-    })();
+    updateFlowRateToReceiver();
   }, [address, superToken]);
 
   useEffect(() => {
@@ -124,6 +106,26 @@ export default function Fund(props: FundProps) {
       setWrapAmount(formatEther(parseEther(amountPerTimeInterval) * BigInt(3)));
     }
   }, [amountPerTimeInterval]);
+
+  const updateFlowRateToReceiver = async () => {
+    if (!address || !superToken) {
+      return;
+    }
+
+    const { flowRate: flowRateToReceiver } = await getFlow(
+      superToken,
+      address,
+      MATCHING_POOL_ADDRESS
+    );
+    const currentStreamValue = roundWeiAmount(
+      BigInt(flowRateToReceiver) *
+        BigInt(fromTimeUnitsToSeconds(1, unitOfTime[timeInterval])),
+      4
+    );
+
+    setFlowRateToReceiver(flowRateToReceiver);
+    setAmountPerTimeInterval(currentStreamValue);
+  };
 
   const handleAmountSelection = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -164,6 +166,8 @@ export default function Fund(props: FundProps) {
     await executeTransactions(transactions);
 
     setStep(Step.SUCCESS);
+
+    await updateFlowRateToReceiver();
   };
 
   const roundWeiAmount = (flowRate: bigint, digits: number) =>
@@ -436,12 +440,12 @@ export default function Fund(props: FundProps) {
             <Badge
               pill
               as="div"
-              className={`d-flex align-items-center py-1
+              className={`d-flex align-items-center p-1
                     ${
                       step === Step.SELECT_AMOUNT ? "bg-secondary" : "bg-aqua"
-                    } ${step === Step.REVIEW ? "px-1" : ""}`}
+                    }`}
             >
-              {step === Step.REVIEW ? (
+              {step === Step.REVIEW || step === Step.SUCCESS ? (
                 <Image src={DoneIcon} alt="done" width={16} />
               ) : (
                 <Card.Text className="p-0">2</Card.Text>
@@ -529,7 +533,7 @@ export default function Fund(props: FundProps) {
                 <OverlayTrigger
                   overlay={
                     <Tooltip id="t-skip-wrap" className="fs-6">
-                      You must have enough ETHx to continue
+                      You can skip wrapping if you already have an ETHx balance.
                     </Tooltip>
                   }
                 >
@@ -573,7 +577,9 @@ export default function Fund(props: FundProps) {
             <Badge
               pill
               className={`d-flex align-items-center py-1 ${
-                step !== Step.REVIEW ? "bg-secondary" : "bg-aqua"
+                step !== Step.REVIEW && step !== Step.SUCCESS
+                  ? "bg-secondary"
+                  : "bg-aqua"
               } ${step === Step.SUCCESS ? "px-1" : ""}`}
             >
               {step === Step.SUCCESS ? (

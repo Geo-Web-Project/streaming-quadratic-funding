@@ -13,7 +13,7 @@ export default function useTransactionsQueue() {
       for (const transaction of transactions) {
         await transaction();
 
-        setCompletedTransactions((prev) => prev++);
+        setCompletedTransactions((prev) => prev + 1);
       }
     } catch (err: any) {
       setTransactionError(err.message);
@@ -22,6 +22,7 @@ export default function useTransactionsQueue() {
       throw Error(err);
     }
 
+    setCompletedTransactions(0);
     setAreTransactionsLoading(false);
   };
 
