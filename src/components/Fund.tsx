@@ -14,9 +14,9 @@ import Alert from "react-bootstrap/Alert";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 import ConnectWallet from "./ConnectWallet";
+import GranteeDetails from "./GranteeDetails";
 import XLogo from "../assets/x-logo.svg";
 import WebIcon from "../assets/web.svg";
-import CloseIcon from "../assets/close.svg";
 import OpLogo from "../assets/op-logo.svg";
 import ETHLogo from "../assets/eth-white.svg";
 import DoneIcon from "../assets/done.svg";
@@ -28,7 +28,15 @@ import CopyTooltip from "./CopyTooltip";
 import useSuperfluid from "../hooks/superfluid";
 import useSuperTokenBalance from "../hooks/superTokenBalance";
 import useTransactionsQueue from "../hooks/transactionsQueue";
-import { isNumber, fromTimeUnitsToSeconds, truncateStr } from "../lib/utils";
+import {
+  TimeInterval,
+  unitOfTime,
+  isNumber,
+  fromTimeUnitsToSeconds,
+  truncateStr,
+  roundWeiAmount,
+  convertStreamValueToInterval,
+} from "../lib/utils";
 import { MATCHING_POOL_ADDRESS } from "../lib/constants";
 
 interface FundProps {
@@ -41,20 +49,6 @@ enum Step {
   REVIEW = "Review the transaction(s)",
   SUCCESS = "Success!",
 }
-
-enum TimeInterval {
-  DAY = "/day",
-  WEEK = "/week",
-  MONTH = "/month",
-  YEAR = "/year",
-}
-
-const unitOfTime = {
-  [TimeInterval.DAY]: "days",
-  [TimeInterval.WEEK]: "weeks",
-  [TimeInterval.MONTH]: "months",
-  [TimeInterval.YEAR]: "years",
-};
 
 export default function Fund(props: FundProps) {
   const { setShowTransactionPanel } = props;
@@ -170,129 +164,37 @@ export default function Fund(props: FundProps) {
     await updateFlowRateToReceiver();
   };
 
-  const roundWeiAmount = (flowRate: bigint, digits: number) =>
-    parseFloat(Number(formatEther(flowRate)).toFixed(digits)).toString();
-
-  const convertStreamValueToInterval = (
-    amount: bigint,
-    from: TimeInterval,
-    to: TimeInterval
-  ) =>
-    roundWeiAmount(
-      (amount / BigInt(fromTimeUnitsToSeconds(1, unitOfTime[from]))) *
-        BigInt(fromTimeUnitsToSeconds(1, unitOfTime[to])),
-      4
-    );
-
   return (
     <Stack
       direction="vertical"
       className="bg-blue mt-3 rounded-4 text-white pb-3"
     >
-      <Stack
-        direction="horizontal"
-        className="justify-content-between align-items-center p-2"
-      >
-        <Card.Text className="fs-3 pe-0 m-0">Fund Matching Stream</Card.Text>
-        <Button
-          variant="transparent"
-          className="float-end p-0 pe-0"
-          onClick={() => setShowTransactionPanel(false)}
-        >
-          <Image src={CloseIcon} alt="close" width={28} />
-        </Button>
-      </Stack>
-      <Stack direction="horizontal" gap={2} className="align-items-end">
-        <Image src={SQFIcon} alt="SQF" width={128} />
-        <Card className="bg-transparent text-white border-0">
-          <Card.Title className="text-secondary fs-4">
-            Matching Stream
-          </Card.Title>
-          <Card.Subtitle className="mb-0 fs-5">
-            Your Current Stream
-          </Card.Subtitle>
-          <Card.Body className="d-flex align-items-center gap-2 p-0">
-            {address && !flowRateToReceiver ? (
-              <Spinner
-                animation="border"
-                role="status"
-                className="mx-auto mt-3 p-3"
-              ></Spinner>
-            ) : (
-              <>
-                <Card.Text as="span" className="fs-1">
-                  {roundWeiAmount(
-                    BigInt(flowRateToReceiver) *
-                      BigInt(
-                        fromTimeUnitsToSeconds(
-                          1,
-                          unitOfTime[TimeInterval.MONTH]
-                        )
-                      ),
-                    4
-                  )}
-                </Card.Text>
-                <Card.Text as="span" className="fs-6">
-                  ETHx <br />
-                  per <br />
-                  month
-                </Card.Text>
-              </>
-            )}
-          </Card.Body>
-        </Card>
-      </Stack>
-      <Stack direction="horizontal" className="text-secondary fs-4 p-2">
-        Details
-        <Button
-          variant="link"
-          href="https://geoweb.network"
-          target="_blank"
-          rel="noreferrer"
-          className="ms-2 p-0"
-        >
-          <Image src={WebIcon} alt="Web" width={18} />
-        </Button>
-        <Button
-          variant="link"
-          href="https://twitter.com/thegeoweb"
-          target="_blank"
-          rel="noreferrer"
-          className="ms-1 p-0"
-        >
-          <Image src={XLogo} alt="X Social Network" width={12} />
-        </Button>
-      </Stack>
-      <Stack direction="horizontal" gap={1} className="fs-6 p-2">
-        <Stack direction="vertical" gap={1}>
-          <Card.Text className="m-0 pe-0">You</Card.Text>
-          <Badge className="w-100 bg-aqua rounded-1 p-1 text-start">0</Badge>
-        </Stack>
-        <Stack direction="vertical" gap={1}>
-          <Card.Text className="m-0 pe-0">Direct</Card.Text>
-          <Badge className="w-100 bg-secondary rounded-1 p-1 text-start">
-            0
-          </Badge>
-        </Stack>
-        <Stack direction="vertical" gap={1}>
-          <Card.Text className="m-0 pe-0">Matching</Card.Text>
-          <Badge className="w-100 bg-slate rounded-1 p-1 text-start">0</Badge>
-        </Stack>
-        <Card.Text className="align-self-end">total funding</Card.Text>
-      </Stack>
-      <Card.Text className="m-0 p-2 fs-5" style={{ maxWidth: 500 }}>
-        100% of Geo Web PCO land market revenue is allocated through streaming
-        quadratic funding. You can help fund more public goods by opening a
-        direct stream to the matching pool OR by claiming a parcel at{" "}
-        <Card.Link
-          href="https://geoweb.land"
-          target="_blank"
-          rel="noreferrer"
-          className="text-decoration-none"
-        >
-          https://geoweb.land
-        </Card.Link>
-      </Card.Text>
+      <GranteeDetails
+        header="Fund Matching Stream"
+        name="Matching Stream"
+        image={SQFIcon}
+        website="https://geoweb.network"
+        social="https://twitter.com/thegeoweb"
+        accountAddress={address}
+        flowRateToReceiver={flowRateToReceiver}
+        setShowTransactionPanel={setShowTransactionPanel}
+        description={
+          <>
+            100% of Geo Web PCO land market revenue is allocated through
+            streaming quadratic funding. You can help fund more public goods by
+            opening a direct stream to the matching pool OR by claiming a parcel
+            at{" "}
+            <Card.Link
+              href="https://geoweb.land"
+              target="_blank"
+              rel="noreferrer"
+              className="text-decoration-none"
+            >
+              https://geoweb.land
+            </Card.Link>
+          </>
+        }
+      />
       <Accordion activeKey={step}>
         <Card className="bg-blue text-white border-0 rounded-0">
           <Button
@@ -440,9 +342,13 @@ export default function Fund(props: FundProps) {
             <Badge
               pill
               as="div"
-              className={`d-flex align-items-center p-1
+              className={`d-flex align-items-center py-1
                     ${
                       step === Step.SELECT_AMOUNT ? "bg-secondary" : "bg-aqua"
+                    } ${
+                      step === Step.REVIEW || step === Step.SUCCESS
+                        ? "px-1"
+                        : ""
                     }`}
             >
               {step === Step.REVIEW || step === Step.SUCCESS ? (

@@ -1,3 +1,19 @@
+import { formatEther } from "viem";
+
+export enum TimeInterval {
+  DAY = "/day",
+  WEEK = "/week",
+  MONTH = "/month",
+  YEAR = "/year",
+}
+
+export const unitOfTime = {
+  [TimeInterval.DAY]: "days",
+  [TimeInterval.WEEK]: "weeks",
+  [TimeInterval.MONTH]: "months",
+  [TimeInterval.YEAR]: "years",
+};
+
 export function weightedPick(items: any[], weights: number[]) {
   let i;
 
@@ -71,5 +87,21 @@ export function truncateStr(str: string, strLen: number) {
 
   return (
     str.substr(0, frontChars) + separator + str.substr(str.length - backChars)
+  );
+}
+
+export function roundWeiAmount(flowRate: bigint, digits: number) {
+  return parseFloat(Number(formatEther(flowRate)).toFixed(digits)).toString();
+}
+
+export function convertStreamValueToInterval(
+  amount: bigint,
+  from: TimeInterval,
+  to: TimeInterval
+) {
+  return roundWeiAmount(
+    (amount / BigInt(fromTimeUnitsToSeconds(1, unitOfTime[from]))) *
+      BigInt(fromTimeUnitsToSeconds(1, unitOfTime[to])),
+    4
   );
 }
