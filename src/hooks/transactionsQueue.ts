@@ -16,7 +16,13 @@ export default function useTransactionsQueue() {
         setCompletedTransactions((prev) => prev + 1);
       }
     } catch (err: any) {
-      setTransactionError(err.message);
+      let errorMessage = "An error occured executing the transaction";
+
+      if (err.code === "ACTION_REJECTED") {
+        errorMessage = "Transaction rejected";
+      }
+
+      setTransactionError(errorMessage);
       setAreTransactionsLoading(false);
 
       throw Error(err);
