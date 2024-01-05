@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { parseEther, formatEther } from "viem";
 import { useAccount, useNetwork, useBalance } from "wagmi";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import Accordion from "react-bootstrap/Accordion";
 import Stack from "react-bootstrap/Stack";
 import Card from "react-bootstrap/Card";
@@ -15,8 +17,7 @@ import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 import ConnectWallet from "./ConnectWallet";
 import GranteeDetails from "./GranteeDetails";
-import XLogo from "../assets/x-logo.svg";
-import WebIcon from "../assets/web.svg";
+import InfoIcon from "../assets/info.svg";
 import OpLogo from "../assets/op-logo.svg";
 import ETHLogo from "../assets/eth-white.svg";
 import DoneIcon from "../assets/done.svg";
@@ -49,6 +50,9 @@ enum Step {
   REVIEW = "Review the transaction(s)",
   SUCCESS = "Success!",
 }
+
+dayjs().format();
+dayjs.extend(duration);
 
 export default function Fund(props: FundProps) {
   const { setShowTransactionPanel } = props;
@@ -365,8 +369,9 @@ export default function Fund(props: FundProps) {
               pill
               as="div"
               className={`d-flex justify-content-center p-0
-                    ${step === Step.SELECT_AMOUNT ? "bg-secondary" : "bg-aqua"}
-                    `}
+                    ${
+                      step === Step.SELECT_AMOUNT ? "bg-secondary" : "bg-aqua"
+                    }`}
               style={{
                 width: 20,
                 height: 20,
@@ -549,8 +554,14 @@ export default function Fund(props: FundProps) {
                       className="justify-content-center align-items-center bg-blue p-2 rounded-4"
                     >
                       <Image src={ETHLogo} alt="done" width={16} />
-                      <Card.Text className="border-0 text-center text-white fs-5">
+                      <Card.Text className="m-0 border-0 text-center text-white fs-5">
                         {wrapAmount} <br /> ETH
+                      </Card.Text>
+                      <Card.Text className="border-0 text-center text-white fs-6">
+                        New Balance:{" "}
+                        {(Number(ethBalance?.formatted) - Number(wrapAmount))
+                          .toString()
+                          .slice(0, 8)}
                       </Card.Text>
                     </Stack>
                     <Image
@@ -565,8 +576,14 @@ export default function Fund(props: FundProps) {
                       className="justify-content-center align-items-center bg-blue p-2 rounded-4"
                     >
                       <Image src={ETHLogo} alt="done" width={16} />
-                      <Card.Text className="border-0 text-center text-white fs-5">
+                      <Card.Text className="m-0 border-0 text-center text-white fs-5">
                         {wrapAmount} <br /> ETHx
+                      </Card.Text>
+                      <Card.Text className="border-0 text-center text-white fs-6">
+                        New Balance:{" "}
+                        {formatEther(
+                          superTokenBalance + parseEther(wrapAmount ?? "0")
+                        ).slice(0, 8)}
                       </Card.Text>
                     </Stack>
                   </Stack>
@@ -624,23 +641,18 @@ export default function Fund(props: FundProps) {
               <Stack
                 direction="vertical"
                 gap={2}
-                className="bg-purple rounded-4 p-1"
+                className="bg-purple rounded-4"
               >
                 <Stack
                   direction="horizontal"
                   className="border-bottom border-dark p-2"
                 >
-                  <Card.Text className="w-33 m-0">Balance</Card.Text>
-                  <Stack direction="horizontal" gap={1} className="w-50 ms-1">
-                    <Image src={ETHLogo} alt="eth" width={16} />
-                    <Badge className="bg-blue w-100 ps-2 pe-2 py-2 fs-4 text-start">
-                      {formatEther(superTokenBalance).slice(0, 8)}
-                    </Badge>
-                  </Stack>
-                </Stack>
-                <Stack direction="horizontal" className="p-2">
-                  <Card.Text className="w-33 m-0">New Stream Value</Card.Text>
-                  <Stack direction="horizontal" gap={1} className="w-50 ms-1">
+                  <Card.Text className="w-33 m-0">New Stream</Card.Text>
+                  <Stack
+                    direction="horizontal"
+                    gap={1}
+                    className="w-50 ms-1 p-2"
+                  >
                     <Image src={ETHLogo} alt="eth" width={16} />
                     <Badge className="bg-aqua w-100 ps-2 pe-2 py-2 fs-4 text-start">
                       {convertStreamValueToInterval(
@@ -653,6 +665,58 @@ export default function Fund(props: FundProps) {
                   <Card.Text className="m-0 ms-1 fs-5">/month</Card.Text>
                 </Stack>
               </Stack>
+              {accountFlowRate &&
+                BigInt(-accountFlowRate) -
+                  BigInt(flowRateToReceiver) +
+                  parseEther(amountPerTimeInterval) /
+                    BigInt(
+                      fromTimeUnitsToSeconds(1, unitOfTime[timeInterval])
+                    ) >
+                  BigInt(0) && (
+                  <Stack direction="horizontal" gap={1} className="mt-1">
+                    <Card.Text className="m-0">Est. Liquidation</Card.Text>
+                    <OverlayTrigger
+                      overlay={
+                        <Tooltip id="t-liquidation-info" className="fs-6">
+                          This is the current estimate for when your token
+                          balance will reach 0. Make sure to close your stream
+                          or wrap more tokens before this date to avoid loss of
+                          your buffer deposit.
+                        </Tooltip>
+                      }
+                    >
+                      <Image src={InfoIcon} alt="liquidation info" width={16} />
+                    </OverlayTrigger>
+                    <Card.Text className="m-0 ms-1">
+                      {dayjs()
+                        .add(
+                          dayjs.duration({
+                            seconds:
+                              Number(
+                                formatEther(
+                                  superTokenBalance +
+                                    parseEther(wrapAmount ?? "0")
+                                )
+                              ) /
+                              Number(
+                                formatEther(
+                                  BigInt(-accountFlowRate) -
+                                    BigInt(flowRateToReceiver) +
+                                    parseEther(amountPerTimeInterval) /
+                                      BigInt(
+                                        fromTimeUnitsToSeconds(
+                                          1,
+                                          unitOfTime[timeInterval]
+                                        )
+                                      )
+                                )
+                              ),
+                          })
+                        )
+                        .format("MMMM D, YYYY")}
+                    </Card.Text>
+                  </Stack>
+                )}
               <Button
                 variant="success"
                 disabled={step === Step.SUCCESS}

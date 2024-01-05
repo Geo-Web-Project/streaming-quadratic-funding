@@ -43,7 +43,7 @@ export default function FundingSources(props: FundingSourcesProps) {
       style={{ width: VIZ_CARD_WIDTH_SOURCE, height: dimensions.height }}
     >
       <Card
-        className="position-absolute w-100 bg-aqua border-0 rounded-end-0 px-2 py-0 text-white"
+        className="position-absolute w-100 bg-aqua border-0 rounded-end-0 px-2 py-1 text-white"
         style={{
           top: startYScale(0) - 105,
           height: dimensions.pathHeight,
