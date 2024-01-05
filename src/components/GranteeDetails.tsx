@@ -5,7 +5,6 @@ import Button from "react-bootstrap/Button";
 import Image from "react-bootstrap/Image";
 import Badge from "react-bootstrap/Badge";
 import Spinner from "react-bootstrap/Spinner";
-import SQFIcon from "../assets/sqf.png";
 import CloseIcon from "../assets/close.svg";
 import XLogo from "../assets/x-logo.svg";
 import WebIcon from "../assets/web.svg";
@@ -23,7 +22,6 @@ interface GranteeDetailsProps {
   description: JSX.Element;
   website: string;
   social: string;
-  accountAddress?: string;
   flowRateToReceiver: string;
   setShowTransactionPanel: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -36,10 +34,11 @@ export default function GranteeDetails(props: GranteeDetailsProps) {
     description,
     website,
     social,
-    accountAddress,
     flowRateToReceiver,
     setShowTransactionPanel,
   } = props;
+
+  const { address } = useAccount();
 
   return (
     <>
@@ -64,7 +63,7 @@ export default function GranteeDetails(props: GranteeDetailsProps) {
             Your Current Stream
           </Card.Subtitle>
           <Card.Body className="d-flex align-items-center gap-2 p-0">
-            {accountAddress && !flowRateToReceiver ? (
+            {address && !flowRateToReceiver ? (
               <Spinner
                 animation="border"
                 role="status"

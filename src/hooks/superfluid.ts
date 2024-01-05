@@ -8,7 +8,10 @@ import {
 import { useNetwork } from "wagmi";
 import { useEthersSigner, useEthersProvider } from "./ethersAdapters";
 
-export default function useSuperfluid(tokenAddress: string, account?: string) {
+export default function useSuperfluid(
+  tokenAddress: string,
+  accountAdress?: string
+) {
   const [sfFramework, setSfFramework] = useState<Framework>();
   const [superToken, setSuperToken] = useState<
     NativeAssetSuperToken | WrapperSuperToken
@@ -25,7 +28,7 @@ export default function useSuperfluid(tokenAddress: string, account?: string) {
 
   useEffect(() => {
     (async () => {
-      if (!chain || !account) {
+      if (!chain || !accountAdress) {
         return;
       }
 
@@ -41,27 +44,43 @@ export default function useSuperfluid(tokenAddress: string, account?: string) {
       } else {
         superToken = await sfFramework.loadWrapperSuperToken(tokenAddress);
       }
-      const accountFlowRate = await superToken.getNetFlow({
-        account,
-        providerOrSigner: provider,
-      });
-      const timestamp = (Date.now() / 1000) | 0;
-      const { availableBalance, timestamp: startingDate } =
-        await superToken.realtimeBalanceOf({
-          account,
-          timestamp,
-          providerOrSigner: provider,
-        });
+
+      updateSfAccountInfo(superToken);
 
       setSuperToken(superToken);
       setSfFramework(sfFramework);
-      setAccountFlowRate(accountFlowRate);
-      setStartingSuperTokenBalance({
-        availableBalance,
-        timestamp: (new Date(startingDate).getTime() / 1000) | 0,
-      });
     })();
-  }, [chain, account]);
+  }, [chain, accountAdress]);
+
+  const updateSfAccountInfo = async (
+    superToken: NativeAssetSuperToken | WrapperSuperToken
+  ) => {
+    if (!superToken) {
+      throw Error("Super Token was not initialized");
+    }
+
+    if (!accountAdress) {
+      throw Error("Could not find the account address");
+    }
+
+    const accountFlowRate = await superToken.getNetFlow({
+      account: accountAdress,
+      providerOrSigner: provider,
+    });
+    const timestamp = (Date.now() / 1000) | 0;
+    const { availableBalance, timestamp: startingDate } =
+      await superToken.realtimeBalanceOf({
+        account: accountAdress,
+        timestamp,
+        providerOrSigner: provider,
+      });
+
+    setAccountFlowRate(accountFlowRate);
+    setStartingSuperTokenBalance({
+      availableBalance,
+      timestamp: (new Date(startingDate).getTime() / 1000) | 0,
+    });
+  };
 
   const getFlow = async (
     superToken: NativeAssetSuperToken | WrapperSuperToken,
@@ -142,6 +161,7 @@ export default function useSuperfluid(tokenAddress: string, account?: string) {
     superToken,
     startingSuperTokenBalance,
     accountFlowRate,
+    updateSfAccountInfo,
     getFlow,
     wrap,
     createFlow,

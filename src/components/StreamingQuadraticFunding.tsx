@@ -2,7 +2,7 @@ import { useState } from "react";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import Fund from "./Fund";
+import FundMatchingPool from "./FundMatchingPool";
 import Visualization from "./Visualization";
 
 export default function StreamingQuadraticFunding() {
@@ -14,7 +14,9 @@ export default function StreamingQuadraticFunding() {
       <Row>
         <Col xs="3">
           {showTransactionPanel && (
-            <Fund setShowTransactionPanel={setShowTransactionPanel} />
+            <FundMatchingPool
+              setShowTransactionPanel={setShowTransactionPanel}
+            />
           )}
         </Col>
         <Col xs={showTransactionPanel ? "9" : 0}>

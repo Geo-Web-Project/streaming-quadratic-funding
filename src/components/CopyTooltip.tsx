@@ -11,7 +11,6 @@ type CopyTooltipProps = {
 };
 
 const UpdatingTooltip = forwardRef(function UpdatingTooltip(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   { popper, children, showTooltip, ...props }: any,
   ref
 ) {
