@@ -49,7 +49,7 @@ export default function FundingSources(props: FundingSourcesProps) {
           height: dimensions.pathHeight,
         }}
       >
-        <Card.Header className="p-0 border-0 fs-3">You</Card.Header>
+        <Card.Header className="p-0 border-0 fs-4">You</Card.Header>
         <Card.Body className="d-flex flex-column justify-content-center p-0 pb-1 fs-6">
           <div className="d-flex align-items-center gap-1">
             <Image src={usdcWhite} alt="usdc" width={16} />

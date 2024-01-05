@@ -196,22 +196,37 @@ export default function Fund(props: FundProps) {
         }
       />
       <Accordion activeKey={step}>
-        <Card className="bg-blue text-white border-0 rounded-0">
+        <Card
+          className="bg-blue text-white rounded-0"
+          style={{
+            border: "none",
+            borderTop:
+              step === Step.SELECT_AMOUNT ? "1px dashed #31374E" : "none",
+            borderBottom:
+              step === Step.SELECT_AMOUNT ? "1px dashed #31374E" : "none",
+          }}
+        >
           <Button
-            variant="transparent"
-            className="d-flex align-items-center gap-2 p-2 border-0 text-white shadow-none"
+            variant={step === Step.SELECT_AMOUNT ? "dark" : "transparent"}
+            className="d-flex align-items-center gap-2 p-2 text-white border-0 rounded-0 shadow-none"
+            style={{
+              pointerEvents: step === Step.SELECT_AMOUNT ? "none" : "auto",
+            }}
             onClick={() => setStep(Step.SELECT_AMOUNT)}
-            style={{ borderBottom: "1px dashed #31374E" }}
           >
             <Badge
               pill
               as="div"
-              className="d-flex align-items-center p-1 bg-aqua"
+              className="d-flex justify-content-center p-0 bg-aqua"
+              style={{
+                width: 20,
+                height: 20,
+              }}
             >
               {step !== Step.SELECT_AMOUNT ? (
                 <Image src={DoneIcon} alt="done" width={16} />
               ) : (
-                <Card.Text className="px-1 py-0">1</Card.Text>
+                <Card.Text className="m-auto text-blue">1</Card.Text>
               )}
             </Badge>
             {Step.SELECT_AMOUNT}
@@ -219,7 +234,6 @@ export default function Fund(props: FundProps) {
           <Accordion.Collapse
             eventKey={Step.SELECT_AMOUNT}
             className="bg-dark px-2 py-3"
-            style={{ borderBottom: "1px dashed #31374E" }}
           >
             <Stack gap={3}>
               <Stack direction="horizontal" gap={2}>
@@ -331,30 +345,37 @@ export default function Fund(props: FundProps) {
             </Stack>
           </Accordion.Collapse>
         </Card>
-        <Card className="bg-blue text-white border-0 rounded-0">
+        <Card
+          className="bg-blue text-white rounded-0"
+          style={{
+            border: "none",
+            borderTop: step === Step.WRAP ? "1px dashed #31374E" : "none",
+            borderBottom: step === Step.WRAP ? "1px dashed #31374E" : "none",
+          }}
+        >
           <Button
-            variant="transparent"
-            disabled={step === Step.SELECT_AMOUNT}
-            className="d-flex align-items-center gap-2 p-2 border-0 text-white shadow-none"
+            variant={step === Step.WRAP ? "dark" : "transparent"}
+            className="d-flex align-items-center gap-2 p-2 border-0 rounded-0 text-white shadow-none"
             onClick={() => setStep(Step.WRAP)}
-            style={{ borderBottom: "1px dashed #31374E" }}
+            style={{
+              pointerEvents: step === Step.WRAP ? "none" : "auto",
+            }}
           >
             <Badge
               pill
               as="div"
-              className={`d-flex align-items-center py-1
-                    ${
-                      step === Step.SELECT_AMOUNT ? "bg-secondary" : "bg-aqua"
-                    } ${
-                      step === Step.REVIEW || step === Step.SUCCESS
-                        ? "px-1"
-                        : ""
-                    }`}
+              className={`d-flex justify-content-center p-0
+                    ${step === Step.SELECT_AMOUNT ? "bg-secondary" : "bg-aqua"}
+                    `}
+              style={{
+                width: 20,
+                height: 20,
+              }}
             >
               {step === Step.REVIEW || step === Step.SUCCESS ? (
                 <Image src={DoneIcon} alt="done" width={16} />
               ) : (
-                <Card.Text className="p-0">2</Card.Text>
+                <Card.Text className="m-auto text-blue">2</Card.Text>
               )}
             </Badge>
             {Step.WRAP}
@@ -362,7 +383,6 @@ export default function Fund(props: FundProps) {
           <Accordion.Collapse
             eventKey={Step.WRAP}
             className="bg-dark px-2 py-3"
-            style={{ borderBottom: "1px dashed #31374E" }}
           >
             <Stack direction="vertical" gap={3}>
               <Stack direction="vertical" className="position-relative">
@@ -472,201 +492,212 @@ export default function Fund(props: FundProps) {
             </Stack>
           </Accordion.Collapse>
         </Card>
-        <Card className="bg-blue text-white border-0 rounded-0 rounded-bottom-4">
+        <Card
+          className="bg-blue text-white rounded-0"
+          style={{
+            border: "none",
+            borderTop: step === Step.REVIEW ? "1px dashed #31374E" : "none",
+            borderBottom: step === Step.REVIEW ? "1px dashed #31374E" : "none",
+          }}
+        >
           <Button
-            variant="transparent"
-            disabled={step === Step.SELECT_AMOUNT || step === Step.WRAP}
-            className="d-flex align-items-center gap-2 p-2 border-0 text-white shadow-none"
+            variant={step === Step.REVIEW ? "dark" : "transparent"}
+            className="d-flex align-items-center gap-2 p-2 border-0 rounded-0 text-white shadow-none"
+            style={{
+              pointerEvents: step === Step.REVIEW ? "none" : "auto",
+            }}
             onClick={() => setStep(Step.REVIEW)}
-            style={{ borderBottom: "1px dashed #31374E" }}
           >
             <Badge
               pill
-              className={`d-flex align-items-center py-1 ${
+              className={`d-flex justify-content-center p-0 ${
                 step !== Step.REVIEW && step !== Step.SUCCESS
                   ? "bg-secondary"
                   : "bg-aqua"
-              } ${step === Step.SUCCESS ? "px-1" : ""}`}
+              }`}
+              style={{
+                width: 20,
+                height: 20,
+              }}
             >
               {step === Step.SUCCESS ? (
                 <Image src={DoneIcon} alt="done" width={16} />
               ) : (
-                <Card.Text className="p-0">3</Card.Text>
+                <Card.Text className="m-auto text-blue">3</Card.Text>
               )}
             </Badge>
             {Step.REVIEW}
           </Button>
-        </Card>
-        <Accordion.Collapse
-          eventKey={Step.REVIEW}
-          className="bg-dark px-2 py-3"
-          style={{ borderBottom: "1px dashed #31374E" }}
-        >
-          <Stack direction="vertical" gap={2}>
-            {Number(wrapAmount) > 0 && (
-              <Stack direction="vertical" gap={1}>
-                <Card.Text className="border-bottom border-secondary mb-2 pb-1 text-secondary">
-                  A. Wrap Tokens
-                </Card.Text>
-                <Stack
-                  direction="horizontal"
-                  gap={1}
-                  className="position-relative"
-                >
+          <Accordion.Collapse
+            eventKey={Step.REVIEW}
+            className="bg-dark px-2 py-3"
+          >
+            <Stack direction="vertical" gap={2}>
+              {Number(wrapAmount) > 0 && (
+                <Stack direction="vertical" gap={1}>
+                  <Card.Text className="border-bottom border-secondary mb-2 pb-1 text-secondary">
+                    A. Wrap Tokens
+                  </Card.Text>
                   <Stack
-                    direction="vertical"
-                    gap={2}
-                    className="justify-content-center align-items-center bg-blue p-2 rounded-4"
+                    direction="horizontal"
+                    gap={1}
+                    className="position-relative"
                   >
-                    <Image src={ETHLogo} alt="done" width={16} />
-                    <Card.Text className="border-0 text-center text-white fs-5">
-                      {wrapAmount} <br /> ETH
-                    </Card.Text>
+                    <Stack
+                      direction="vertical"
+                      gap={2}
+                      className="justify-content-center align-items-center bg-blue p-2 rounded-4"
+                    >
+                      <Image src={ETHLogo} alt="done" width={16} />
+                      <Card.Text className="border-0 text-center text-white fs-5">
+                        {wrapAmount} <br /> ETH
+                      </Card.Text>
+                    </Stack>
+                    <Image
+                      className="bg-transparent"
+                      src={ArrowForwardIcon}
+                      alt="forward arrow"
+                      width={30}
+                    />
+                    <Stack
+                      direction="vertical"
+                      gap={2}
+                      className="justify-content-center align-items-center bg-blue p-2 rounded-4"
+                    >
+                      <Image src={ETHLogo} alt="done" width={16} />
+                      <Card.Text className="border-0 text-center text-white fs-5">
+                        {wrapAmount} <br /> ETHx
+                      </Card.Text>
+                    </Stack>
                   </Stack>
-                  <Image
-                    className="bg-transparent"
-                    src={ArrowForwardIcon}
-                    alt="forward arrow"
-                    width={30}
-                  />
-                  <Stack
-                    direction="vertical"
-                    gap={2}
-                    className="justify-content-center align-items-center bg-blue p-2 rounded-4"
-                  >
-                    <Image src={ETHLogo} alt="done" width={16} />
-                    <Card.Text className="border-0 text-center text-white fs-5">
-                      {wrapAmount} <br /> ETHx
-                    </Card.Text>
-                  </Stack>
-                </Stack>
-                <Card.Text className="border-0 text-center text-gray fs-4">
-                  1 ETH = 1 ETHx
-                </Card.Text>
-              </Stack>
-            )}
-            <Stack direction="vertical" gap={1}>
-              <Card.Text className="border-bottom border-secondary m-0 pb-1 text-secondary">
-                {Number(wrapAmount) > 0 ? "B." : "A."} Edit stream
-              </Card.Text>
-            </Stack>
-            <Stack
-              direction="horizontal"
-              className="justify-content-around px-2"
-            >
-              <Card.Text className="m-0 border-0 text-center text-white fs-4">
-                Sender
-              </Card.Text>
-              <Card.Text className="m-0 border-0 text-center text-white fs-4">
-                Receiver
-              </Card.Text>
-            </Stack>
-            <Stack direction="horizontal">
-              <Badge className="d-flex justify-content-around align-items-center w-50 bg-blue py-3 rounded-3 border-0 text-center text-white fs-5">
-                {truncateStr(address ?? "", 12)}
-                <CopyTooltip
-                  contentClick="Address copied"
-                  contentHover="Copy address"
-                  handleCopy={() =>
-                    navigator.clipboard.writeText(address ?? "")
-                  }
-                  target={<Image src={CopyIcon} alt="copy" width={18} />}
-                />
-              </Badge>
-              <Image
-                className="bg-transparent"
-                src={ArrowForwardIcon}
-                alt="forward arrow"
-                width={30}
-              />
-              <Badge className="d-flex justify-content-around align-items-center w-50 bg-blue px-2 py-3 rounded-3 border-0 text-center text-white fs-5">
-                {truncateStr(MATCHING_POOL_ADDRESS, 12)}
-                <CopyTooltip
-                  contentClick="Address copied"
-                  contentHover="Copy address"
-                  handleCopy={() =>
-                    navigator.clipboard.writeText(MATCHING_POOL_ADDRESS)
-                  }
-                  target={<Image src={CopyIcon} alt="copy" width={18} />}
-                />
-              </Badge>
-            </Stack>
-            <Stack
-              direction="vertical"
-              gap={2}
-              className="bg-purple rounded-4 p-1"
-            >
-              <Stack
-                direction="horizontal"
-                className="border-bottom border-dark p-2"
-              >
-                <Card.Text className="w-33 m-0">Balance</Card.Text>
-                <Stack direction="horizontal" gap={1} className="w-50 ms-1">
-                  <Image src={ETHLogo} alt="eth" width={16} />
-                  <Badge className="bg-blue w-100 ps-2 pe-2 py-2 fs-4 text-start">
-                    {formatEther(superTokenBalance).slice(0, 8)}
-                  </Badge>
-                </Stack>
-              </Stack>
-              <Stack direction="horizontal" className="p-2">
-                <Card.Text className="w-33 m-0">New Stream Value</Card.Text>
-                <Stack direction="horizontal" gap={1} className="w-50 ms-1">
-                  <Image src={ETHLogo} alt="eth" width={16} />
-                  <Badge className="bg-aqua w-100 ps-2 pe-2 py-2 fs-4 text-start">
-                    {convertStreamValueToInterval(
-                      parseEther(amountPerTimeInterval),
-                      timeInterval,
-                      TimeInterval.MONTH
-                    )}
-                  </Badge>
-                </Stack>
-                <Card.Text className="m-0 ms-1 fs-5">/month</Card.Text>
-              </Stack>
-            </Stack>
-            <Button
-              variant="success"
-              disabled={step === Step.SUCCESS}
-              className="d-flex justify-content-center mt-2 py-1 rounded-3 text-white fw-bold"
-              onClick={handleSubmit}
-            >
-              {areTransactionsLoading ? (
-                <Stack
-                  direction="horizontal"
-                  gap={2}
-                  className="justify-content-center"
-                >
-                  <Spinner
-                    size="sm"
-                    animation="border"
-                    role="status"
-                    className="p-2"
-                  ></Spinner>
-                  <Card.Text className="m-0">
-                    {completedTransactions + 1}/{totalTransactions}
+                  <Card.Text className="border-0 text-center text-gray fs-4">
+                    1 ETH = 1 ETHx
                   </Card.Text>
                 </Stack>
-              ) : (
-                `Submit (${totalTransactions})`
               )}
-            </Button>
-            {step === Step.SUCCESS && (
-              <Alert
+              <Stack direction="vertical" gap={1}>
+                <Card.Text className="border-bottom border-secondary m-0 pb-1 text-secondary">
+                  {Number(wrapAmount) > 0 ? "B." : "A."} Edit stream
+                </Card.Text>
+              </Stack>
+              <Stack
+                direction="horizontal"
+                className="justify-content-around px-2"
+              >
+                <Card.Text className="m-0 border-0 text-center text-white fs-4">
+                  Sender
+                </Card.Text>
+                <Card.Text className="m-0 border-0 text-center text-white fs-4">
+                  Receiver
+                </Card.Text>
+              </Stack>
+              <Stack direction="horizontal">
+                <Badge className="d-flex justify-content-around align-items-center w-50 bg-blue py-3 rounded-3 border-0 text-center text-white fs-5">
+                  {truncateStr(address ?? "", 12)}
+                  <CopyTooltip
+                    contentClick="Address copied"
+                    contentHover="Copy address"
+                    handleCopy={() =>
+                      navigator.clipboard.writeText(address ?? "")
+                    }
+                    target={<Image src={CopyIcon} alt="copy" width={18} />}
+                  />
+                </Badge>
+                <Image
+                  className="bg-transparent"
+                  src={ArrowForwardIcon}
+                  alt="forward arrow"
+                  width={30}
+                />
+                <Badge className="d-flex justify-content-around align-items-center w-50 bg-blue px-2 py-3 rounded-3 border-0 text-center text-white fs-5">
+                  {truncateStr(MATCHING_POOL_ADDRESS, 12)}
+                  <CopyTooltip
+                    contentClick="Address copied"
+                    contentHover="Copy address"
+                    handleCopy={() =>
+                      navigator.clipboard.writeText(MATCHING_POOL_ADDRESS)
+                    }
+                    target={<Image src={CopyIcon} alt="copy" width={18} />}
+                  />
+                </Badge>
+              </Stack>
+              <Stack
+                direction="vertical"
+                gap={2}
+                className="bg-purple rounded-4 p-1"
+              >
+                <Stack
+                  direction="horizontal"
+                  className="border-bottom border-dark p-2"
+                >
+                  <Card.Text className="w-33 m-0">Balance</Card.Text>
+                  <Stack direction="horizontal" gap={1} className="w-50 ms-1">
+                    <Image src={ETHLogo} alt="eth" width={16} />
+                    <Badge className="bg-blue w-100 ps-2 pe-2 py-2 fs-4 text-start">
+                      {formatEther(superTokenBalance).slice(0, 8)}
+                    </Badge>
+                  </Stack>
+                </Stack>
+                <Stack direction="horizontal" className="p-2">
+                  <Card.Text className="w-33 m-0">New Stream Value</Card.Text>
+                  <Stack direction="horizontal" gap={1} className="w-50 ms-1">
+                    <Image src={ETHLogo} alt="eth" width={16} />
+                    <Badge className="bg-aqua w-100 ps-2 pe-2 py-2 fs-4 text-start">
+                      {convertStreamValueToInterval(
+                        parseEther(amountPerTimeInterval),
+                        timeInterval,
+                        TimeInterval.MONTH
+                      )}
+                    </Badge>
+                  </Stack>
+                  <Card.Text className="m-0 ms-1 fs-5">/month</Card.Text>
+                </Stack>
+              </Stack>
+              <Button
                 variant="success"
-                className="mt-2 rounded-4 text-wrap text-break"
+                disabled={step === Step.SUCCESS}
+                className="d-flex justify-content-center mt-2 py-1 rounded-3 text-white fw-bold"
+                onClick={handleSubmit}
               >
-                Success!
-              </Alert>
-            )}
-            {transactionError && (
-              <Alert
-                variant="danger"
-                className="mt-2 rounded-4 text-wrap text-break"
-              >
-                {transactionError}
-              </Alert>
-            )}
-          </Stack>
-        </Accordion.Collapse>
+                {areTransactionsLoading ? (
+                  <Stack
+                    direction="horizontal"
+                    gap={2}
+                    className="justify-content-center"
+                  >
+                    <Spinner
+                      size="sm"
+                      animation="border"
+                      role="status"
+                      className="p-2"
+                    ></Spinner>
+                    <Card.Text className="m-0">
+                      {completedTransactions + 1}/{totalTransactions}
+                    </Card.Text>
+                  </Stack>
+                ) : (
+                  `Submit (${totalTransactions})`
+                )}
+              </Button>
+              {step === Step.SUCCESS && (
+                <Alert
+                  variant="success"
+                  className="mt-2 rounded-4 text-wrap text-break"
+                >
+                  Success!
+                </Alert>
+              )}
+              {transactionError && (
+                <Alert
+                  variant="danger"
+                  className="mt-2 rounded-4 text-wrap text-break"
+                >
+                  {transactionError}
+                </Alert>
+              )}
+            </Stack>
+          </Accordion.Collapse>
+        </Card>
       </Accordion>
     </Stack>
   );
