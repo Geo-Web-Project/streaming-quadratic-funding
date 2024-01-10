@@ -13,15 +13,14 @@ import {
   Timer,
 } from "d3";
 import { formatEther } from "viem";
+import Stack from "react-bootstrap/Stack";
 import FundingSources from "./FundingSources";
 import Grantees from "./Grantees";
 import ethLight from "../assets/eth-light.svg";
 import ethDark from "../assets/eth-dark.svg";
 import usdcLight from "../assets/usdc-light.svg";
 import usdcDark from "../assets/usdc-dark.svg";
-import poolYouJson from "../lib/pool-you.json";
-import poolDirectJson from "../lib/pool-direct.json";
-import poolMatchingJson from "../lib/pool-matching.json";
+import { TransactionPanelState, Grantee } from "./StreamingQuadraticFunding";
 import { weightedPick, getRandomNumberInRange } from "../lib/utils";
 import {
   MS_PER_SECOND,
@@ -31,8 +30,13 @@ import {
 } from "../lib/constants";
 
 export interface VisualizationProps {
-  showTransactionPanel: boolean;
-  setShowTransactionPanel: React.Dispatch<React.SetStateAction<boolean>>;
+  transactionPanelState: TransactionPanelState;
+  setTransactionPanelState: React.Dispatch<
+    React.SetStateAction<TransactionPanelState>
+  >;
+  poolYou: Grantee[];
+  poolDirect: Grantee[];
+  poolMatching: Grantee[];
 }
 
 export interface Dimensions {
@@ -54,12 +58,6 @@ interface Symbol {
   grantee: string;
   startTime: number;
   yJitter: number;
-}
-
-interface Grantee {
-  name: string;
-  description?: string;
-  perSecondRate: string;
 }
 
 interface Dataset {
@@ -99,13 +97,15 @@ const sourceIndexes = range(sources.length);
 let lastSymbolId = 0;
 
 export default function Visualization(props: VisualizationProps) {
-  const { showTransactionPanel, setShowTransactionPanel } = props;
+  const {
+    transactionPanelState,
+    poolYou,
+    poolDirect,
+    poolMatching,
+  } = props;
 
   const [datasetUsdc, setDatasetUsdc] = useState<Dataset[] | null>(null);
   const [datasetEth, setDatasetEth] = useState<Dataset[] | null>(null);
-  const [poolYou, setPoolYou] = useState(poolYouJson);
-  const [poolDirect, setPoolDirect] = useState(poolDirectJson);
-  const [poolMatching, setPoolMatching] = useState(poolMatchingJson);
   const [timerSymbolsEth, setTimerSymbolsEth] = useState<Timer | null>(null);
   const [timerSymbolsUsdc, setTimerSymbolsUsdc] = useState<Timer | null>(null);
   const [timerUpdateSymbols, setTimerUpdateSymbols] = useState<Timer | null>(
@@ -125,9 +125,9 @@ export default function Visualization(props: VisualizationProps) {
   const screenHeight = window.screen.height;
   const dimensions: Dimensions = {
     width:
-      showTransactionPanel && screenWidth > 1980
+      transactionPanelState.show && screenWidth > 1980
         ? screenWidth / 2
-        : showTransactionPanel
+        : transactionPanelState.show
         ? screenWidth / 2.5
         : screenWidth - (VIZ_CARD_WIDTH_SOURCE + VIZ_CARD_WIDTH_GRANTEE),
     height: screenHeight > 1080 ? 1000 : 750,
@@ -157,7 +157,7 @@ export default function Visualization(props: VisualizationProps) {
         endYScale,
         yTransitionProgressScale,
       };
-    }, [showTransactionPanel]);
+    }, [transactionPanelState.show]);
 
   useLayoutEffect(() => {
     const svgElement = select(svgRef.current);
@@ -189,7 +189,7 @@ export default function Visualization(props: VisualizationProps) {
     return () => {
       bounds.remove();
     };
-  }, [showTransactionPanel]);
+  }, [transactionPanelState.show]);
 
   useEffect(() => {
     let _timerSymbolsUsdc: Timer | null = null;
@@ -299,7 +299,7 @@ export default function Visualization(props: VisualizationProps) {
         _timerUpdateSymbols.stop();
       }
     };
-  }, [poolYou, poolDirect, poolMatching, showTransactionPanel]);
+  }, [poolYou, poolDirect, poolMatching, transactionPanelState.show]);
 
   const generateSymbol = (
     elapsed: number,
@@ -443,7 +443,7 @@ export default function Visualization(props: VisualizationProps) {
 
   return (
     <>
-      <div className="d-flex">
+      <Stack direction="horizontal">
         <FundingSources
           dimensions={dimensions}
           startYScale={startYScale}
@@ -465,12 +465,11 @@ export default function Visualization(props: VisualizationProps) {
             datasetUsdc={datasetUsdc}
             datasetEth={datasetEth}
             grantees={grantees}
-            descriptions={poolDirect.map((elem) => elem.description)}
-            poolYou={poolYou}
-            setPoolYou={setPoolYou}
+            descriptions={poolDirect.map((elem) => elem.description ?? "")}
+            {...props}
           />
         )}
-      </div>
+      </Stack>
     </>
   );
 }

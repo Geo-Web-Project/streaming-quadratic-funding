@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAccount, useNetwork, useBalance } from "wagmi";
-import { formatEther, parseEther } from "viem";
+import { formatEther, parseEther, formatUnits } from "viem";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import Accordion from "react-bootstrap/Accordion";
@@ -20,10 +20,15 @@ import CopyTooltip from "./CopyTooltip";
 import InfoIcon from "../assets/info.svg";
 import OpLogo from "../assets/op-logo.svg";
 import ETHLogo from "../assets/eth-white.svg";
+import USDCLogo from "../assets/usdc-white.svg";
 import DoneIcon from "../assets/done.svg";
+import XIcon from "../assets/x-logo.svg";
+import FarcasterIcon from "../assets/farcaster.svg";
+import PassportIcon from "../assets/passport.svg";
 import ArrowDownIcon from "../assets/arrow-down.svg";
 import ArrowForwardIcon from "../assets/arrow-forward.svg";
 import CopyIcon from "../assets/copy-light.svg";
+import ReloadIcon from "../assets/reload.svg";
 import useSuperTokenBalance from "../hooks/superTokenBalance";
 import useSuperfluid from "../hooks/superfluid";
 import useTransactionsQueue from "../hooks/transactionsQueue";
@@ -36,20 +41,30 @@ import {
   roundWeiAmount,
   convertStreamValueToInterval,
 } from "../lib/utils";
-import { MATCHING_POOL_ADDRESS } from "../lib/constants";
+import {
+  USDC_ADDRESS,
+  USDCX_ADDRESS,
+  SQF_STRATEGY_ADDRESS,
+} from "../lib/constants";
 
 interface EditStreamProps {
+  granteeName: string;
+  receiver: string;
   flowRateToReceiver: string;
   setFlowRateToReceiver: React.Dispatch<React.SetStateAction<string>>;
   newFlowRate: string;
   setNewFlowRate: React.Dispatch<React.SetStateAction<string>>;
   transactionsToQueue: (() => Promise<void>)[];
+  isFundingMatchingPool: boolean;
+  passportScore?: number | null;
+  refetchPassportScore?: () => void;
 }
 
 enum Step {
   SELECT_AMOUNT = "Edit stream",
   WRAP = "Wrap to Super Token",
   REVIEW = "Review the transaction(s)",
+  MINT_PASSPORT = "Mint Gitcoin Passport",
   SUCCESS = "Success!",
 }
 
@@ -58,11 +73,16 @@ dayjs.extend(duration);
 
 export default function EditStream(props: EditStreamProps) {
   const {
+    granteeName,
     flowRateToReceiver,
     setFlowRateToReceiver,
     newFlowRate,
     setNewFlowRate,
     transactionsToQueue,
+    isFundingMatchingPool,
+    passportScore,
+    refetchPassportScore,
+    receiver,
   } = props;
 
   const [wrapAmount, setWrapAmount] = useState<string | null>(null);
@@ -78,19 +98,23 @@ export default function EditStream(props: EditStreamProps) {
     superToken,
     startingSuperTokenBalance,
     accountFlowRate,
+    underlyingTokenAllowance,
     updateSfAccountInfo,
+    updatePermissions,
     getFlow,
     wrap,
-  } = useSuperfluid("ETHx", address);
+    underlyingTokenApprove,
+  } = useSuperfluid(isFundingMatchingPool ? "ETHx" : USDCX_ADDRESS, address);
   const superTokenBalance = useSuperTokenBalance(
     BigInt(startingSuperTokenBalance.availableBalance ?? 0),
     startingSuperTokenBalance.timestamp ?? 0,
     BigInt(accountFlowRate)
   );
-  const { data: ethBalance } = useBalance({
+  const { data: underlyingTokenBalance } = useBalance({
     address,
     cacheTime: 10000,
     staleTime: 10000,
+    token: isFundingMatchingPool ? void 0 : USDC_ADDRESS,
   });
   const {
     areTransactionsLoading,
@@ -99,11 +123,23 @@ export default function EditStream(props: EditStreamProps) {
     executeTransactions,
   } = useTransactionsQueue();
 
-  const totalTransactions = Number(wrapAmount) > 0 ? 2 : 1;
+  const shouldWrap = Number(wrapAmount) > 0 ? true : false;
+  const totalTransactions =
+    isFundingMatchingPool && shouldWrap
+      ? 2
+      : shouldWrap
+      ? 4
+      : isFundingMatchingPool
+      ? 1
+      : 2;
+  const superTokenSymbol = isFundingMatchingPool ? "ETHx" : "USDCx";
+  const superTokenIcon = isFundingMatchingPool ? ETHLogo : USDCLogo;
+  const underlyingTokenName = isFundingMatchingPool ? "ETH" : "USDC";
+  const minPassportScore = 3;
 
   useEffect(() => {
     updateFlowRateToReceiver();
-  }, [address, superToken]);
+  }, [address, superToken, receiver]);
 
   useEffect(() => {
     if (amountPerTimeInterval) {
@@ -135,10 +171,31 @@ export default function EditStream(props: EditStreamProps) {
       return;
     }
 
-    const transactions =
-      wrapAmount && Number(wrapAmount) > 0
-        ? [async () => wrap(parseEther(wrapAmount))]
-        : [];
+    let transactions: (() => Promise<void>)[] = [];
+
+    if (wrapAmount && Number(wrapAmount) > 0) {
+      const wrapAmountWei = parseEther(wrapAmount);
+
+      if (
+        !isFundingMatchingPool &&
+        wrapAmountWei > BigInt(underlyingTokenAllowance)
+      ) {
+        transactions.push(async () => {
+          underlyingTokenApprove(wrapAmountWei.toString());
+        });
+      }
+
+      transactions.push(async () => wrap(wrapAmountWei));
+    }
+
+    if (!isFundingMatchingPool) {
+      transactions.push(async () =>
+        updatePermissions(
+          SQF_STRATEGY_ADDRESS,
+          (BigInt(-accountFlowRate) + BigInt(newFlowRate)).toString()
+        )
+      );
+    }
 
     transactions.push(...transactionsToQueue);
 
@@ -157,7 +214,7 @@ export default function EditStream(props: EditStreamProps) {
     const { flowRate: flowRateToReceiver } = await getFlow(
       superToken,
       address,
-      MATCHING_POOL_ADDRESS
+      receiver
     );
     const currentStreamValue = roundWeiAmount(
       BigInt(flowRateToReceiver) *
@@ -175,6 +232,8 @@ export default function EditStream(props: EditStreamProps) {
         className="bg-blue text-white rounded-0"
         style={{
           border: "none",
+          borderLeft: "1px solid #111320",
+          borderRight: "1px solid #111320",
           borderTop:
             step === Step.SELECT_AMOUNT ? "1px dashed #31374E" : "none",
           borderBottom:
@@ -217,8 +276,12 @@ export default function EditStream(props: EditStreamProps) {
                 {chain?.id === 420 ? "OP Goerli" : "OP Mainnet"}
               </Badge>
               <Badge className="d-flex align-items-center gap-1 bg-blue w-50 rounded-3 px-3 py-2 fs-4 fw-normal">
-                <Image src={ETHLogo} alt="optimism" width={12} />
-                ETHx
+                <Image
+                  src={superTokenIcon}
+                  alt="optimism"
+                  width={isFundingMatchingPool ? 12 : 18}
+                />
+                {superTokenSymbol}
               </Badge>
             </Stack>
             <Stack direction="horizontal">
@@ -324,6 +387,8 @@ export default function EditStream(props: EditStreamProps) {
         className="bg-blue text-white rounded-0"
         style={{
           border: "none",
+          borderLeft: "1px solid #111320",
+          borderRight: "1px solid #111320",
           borderTop: step === Step.WRAP ? "1px dashed #31374E" : "none",
           borderBottom: step === Step.WRAP ? "1px dashed #31374E" : "none",
         }}
@@ -333,7 +398,10 @@ export default function EditStream(props: EditStreamProps) {
           className="d-flex align-items-center gap-2 p-2 border-0 rounded-0 text-white shadow-none"
           onClick={() => setStep(Step.WRAP)}
           style={{
-            pointerEvents: step === Step.WRAP ? "none" : "auto",
+            pointerEvents:
+              step === Step.SELECT_AMOUNT || step === Step.WRAP
+                ? "none"
+                : "auto",
           }}
         >
           <Badge
@@ -376,14 +444,21 @@ export default function EditStream(props: EditStreamProps) {
                 />
                 <Badge
                   as="div"
-                  className="d-flex align-items-center gap-2 bg-purple py-2 border border-dark rounded-3"
+                  className="d-flex justify-content-center align-items-center w-25 gap-1 bg-purple py-2 border border-dark rounded-3"
                 >
-                  <Image src={ETHLogo} alt="done" width={10} />
-                  <Card.Text className="p-0">ETH</Card.Text>
+                  <Image
+                    src={superTokenIcon}
+                    alt="done"
+                    width={isFundingMatchingPool ? 10 : 18}
+                  />
+                  <Card.Text className="p-0">{underlyingTokenName}</Card.Text>
                 </Badge>
               </Stack>
               <Card.Text className="w-100 bg-blue m-0 mb-2 px-2 pb-2 rounded-bottom-4 text-end fs-5">
-                Balance: {ethBalance ? ethBalance.formatted.slice(0, 8) : "0"}
+                Balance:{" "}
+                {underlyingTokenBalance
+                  ? underlyingTokenBalance.formatted.slice(0, 8)
+                  : "0"}
               </Card.Text>
               <Badge
                 pill
@@ -411,19 +486,28 @@ export default function EditStream(props: EditStreamProps) {
                 />
                 <Badge
                   as="div"
-                  className="d-flex align-items-center gap-2 bg-purple py-2 border border-dark rounded-3"
+                  className="d-flex justify-content-center align-items-center gap-1 w-25 bg-purple py-2 border border-dark rounded-3"
                 >
-                  <Image src={ETHLogo} alt="done" width={10} />
-                  <Card.Text className="p-0">ETHx</Card.Text>
+                  <Image
+                    src={superTokenIcon}
+                    alt="done"
+                    width={isFundingMatchingPool ? 10 : 18}
+                  />
+                  <Card.Text className="p-0">{superTokenSymbol}</Card.Text>
                 </Badge>
               </Stack>
               <Card.Text className="w-100 bg-blue m-0 px-2 pb-2 rounded-bottom-4 text-end fs-5">
                 Balance: {formatEther(superTokenBalance).slice(0, 8)}
               </Card.Text>
             </Stack>
-            {ethBalance &&
+            {underlyingTokenBalance &&
               wrapAmount &&
-              ethBalance.value < parseEther(wrapAmount) && (
+              Number(
+                formatUnits(
+                  underlyingTokenBalance.value,
+                  underlyingTokenBalance.decimals
+                )
+              ) < Number(wrapAmount) && (
                 <Alert variant="danger" className="m-0">
                   Insufficient Balance
                 </Alert>
@@ -432,7 +516,9 @@ export default function EditStream(props: EditStreamProps) {
               <OverlayTrigger
                 overlay={
                   <Tooltip id="t-skip-wrap" className="fs-6">
-                    You can skip wrapping if you already have an ETHx balance.
+                    You can skip wrapping if you already have an{" "}
+                    {superTokenSymbol}
+                    balance.
                   </Tooltip>
                 }
               >
@@ -451,13 +537,25 @@ export default function EditStream(props: EditStreamProps) {
               <Button
                 variant="success"
                 disabled={
-                  !ethBalance ||
+                  !underlyingTokenBalance ||
                   !wrapAmount ||
                   Number(wrapAmount) === 0 ||
-                  ethBalance.value < parseEther(wrapAmount)
+                  Number(
+                    formatUnits(
+                      underlyingTokenBalance.value,
+                      underlyingTokenBalance.decimals
+                    )
+                  ) < Number(wrapAmount)
                 }
                 className="w-50 py-1 rounded-3 text-white"
-                onClick={() => setStep(Step.REVIEW)}
+                onClick={() =>
+                  setStep(
+                    isFundingMatchingPool ||
+                      (passportScore && passportScore >= minPassportScore)
+                      ? Step.REVIEW
+                      : Step.MINT_PASSPORT
+                  )
+                }
               >
                 Continue
               </Button>
@@ -465,10 +563,122 @@ export default function EditStream(props: EditStreamProps) {
           </Stack>
         </Accordion.Collapse>
       </Card>
+      {!isFundingMatchingPool && (
+        <Card
+          className="bg-blue text-white rounded-0"
+          style={{
+            border: "none",
+            borderLeft: "1px solid #111320",
+            borderRight: "1px solid #111320",
+            borderTop:
+              step === Step.MINT_PASSPORT ? "1px dashed #31374E" : "none",
+            borderBottom:
+              step === Step.MINT_PASSPORT ? "1px dashed #31374E" : "none",
+          }}
+        >
+          <Button
+            variant={step === Step.MINT_PASSPORT ? "dark" : "transparent"}
+            className="d-flex align-items-center gap-2 p-2 border-0 rounded-0 text-white shadow-none"
+            style={{
+              pointerEvents: step !== Step.REVIEW ? "none" : "auto",
+            }}
+            onClick={() => setStep(Step.MINT_PASSPORT)}
+          >
+            <Badge
+              pill
+              className={`d-flex justify-content-center p-0 ${
+                step !== Step.MINT_PASSPORT &&
+                step !== Step.REVIEW &&
+                step !== Step.SUCCESS
+                  ? "bg-secondary"
+                  : "bg-aqua"
+              }`}
+              style={{
+                width: 20,
+                height: 20,
+              }}
+            >
+              {step === Step.REVIEW || step === Step.SUCCESS ? (
+                <Image src={DoneIcon} alt="done" width={16} />
+              ) : (
+                <Card.Text className="m-auto text-blue">3</Card.Text>
+              )}
+            </Badge>
+            {Step.MINT_PASSPORT}
+          </Button>
+          <Accordion.Collapse
+            eventKey={Step.MINT_PASSPORT}
+            className="bg-dark p-2"
+          >
+            <Stack direction="vertical" gap={2}>
+              <Card.Text className="m-0 border-bottom border-secondary text-secondary">
+                Current Score
+              </Card.Text>
+              <Stack
+                direction="horizontal"
+                gap={3}
+                className={`${
+                  passportScore && passportScore > minPassportScore
+                    ? "text-success"
+                    : passportScore
+                    ? "text-danger"
+                    : "text-yellow"
+                }`}
+              >
+                <Image src={PassportIcon} alt="passport" width={36} />
+                <Card.Text className="m-0 fs-1 fw-bold">
+                  {passportScore ? parseFloat(passportScore.toFixed(3)) : "N/A"}
+                </Card.Text>
+                <Card.Text className="m-0 fs-5" style={{ width: 80 }}>
+                  min. {minPassportScore} required for matching
+                </Card.Text>
+                <Button
+                  variant="transparent"
+                  className="p-0"
+                  onClick={refetchPassportScore}
+                >
+                  <Image
+                    src={ReloadIcon}
+                    alt="reload"
+                    width={24}
+                    style={{
+                      filter:
+                        passportScore && passportScore > minPassportScore
+                          ? "invert(65%) sepia(44%) saturate(6263%) hue-rotate(103deg) brightness(95%) contrast(97%)"
+                          : passportScore
+                          ? "invert(27%) sepia(47%) saturate(3471%) hue-rotate(336deg) brightness(93%) contrast(85%)"
+                          : "invert(88%) sepia(26%) saturate(4705%) hue-rotate(2deg) brightness(109%) contrast(102%)",
+                    }}
+                  />
+                </Button>
+              </Stack>
+              <Button variant="success" className="w-100 rounded-3">
+                <Card.Link
+                  href="https://passport.gitcoin.co"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-decoration-none text-white fw-bold"
+                >
+                  Update stamps and mint
+                </Card.Link>
+              </Button>
+              <Button
+                variant="transparent"
+                className="m-0 ms-auto fs-4 text-info"
+                onClick={() => setStep(Step.REVIEW)}
+              >
+                Skip
+              </Button>
+            </Stack>
+          </Accordion.Collapse>
+        </Card>
+      )}
       <Card
         className="bg-blue text-white rounded-0"
         style={{
           border: "none",
+          borderLeft: "1px solid #111320",
+          borderRight: "1px solid #111320",
           borderTop: step === Step.REVIEW ? "1px dashed #31374E" : "none",
           borderBottom: step === Step.REVIEW ? "1px dashed #31374E" : "none",
         }}
@@ -477,7 +687,7 @@ export default function EditStream(props: EditStreamProps) {
           variant={step === Step.REVIEW ? "dark" : "transparent"}
           className="d-flex align-items-center gap-2 p-2 border-0 rounded-0 text-white shadow-none"
           style={{
-            pointerEvents: step === Step.REVIEW ? "none" : "auto",
+            pointerEvents: "none",
           }}
           onClick={() => setStep(Step.REVIEW)}
         >
@@ -496,7 +706,9 @@ export default function EditStream(props: EditStreamProps) {
             {step === Step.SUCCESS ? (
               <Image src={DoneIcon} alt="done" width={16} />
             ) : (
-              <Card.Text className="m-auto text-blue">3</Card.Text>
+              <Card.Text className="m-auto text-blue">
+                {isFundingMatchingPool ? 3 : 4}
+              </Card.Text>
             )}
           </Badge>
           {Step.REVIEW}
@@ -521,13 +733,20 @@ export default function EditStream(props: EditStreamProps) {
                     gap={2}
                     className="justify-content-center align-items-center bg-blue p-2 rounded-4"
                   >
-                    <Image src={ETHLogo} alt="done" width={16} />
+                    <Image
+                      src={superTokenIcon}
+                      alt="done"
+                      width={isFundingMatchingPool ? 16 : 28}
+                    />
                     <Card.Text className="m-0 border-0 text-center text-white fs-5">
-                      {wrapAmount} <br /> ETH
+                      {wrapAmount} <br /> {underlyingTokenName}
                     </Card.Text>
                     <Card.Text className="border-0 text-center text-white fs-6">
                       New Balance:{" "}
-                      {(Number(ethBalance?.formatted) - Number(wrapAmount))
+                      {(
+                        Number(underlyingTokenBalance?.formatted) -
+                        Number(wrapAmount)
+                      )
                         .toString()
                         .slice(0, 8)}
                     </Card.Text>
@@ -543,9 +762,13 @@ export default function EditStream(props: EditStreamProps) {
                     gap={2}
                     className="justify-content-center align-items-center bg-blue p-2 rounded-4"
                   >
-                    <Image src={ETHLogo} alt="done" width={16} />
+                    <Image
+                      src={superTokenIcon}
+                      alt="done"
+                      width={isFundingMatchingPool ? 16 : 28}
+                    />
                     <Card.Text className="m-0 border-0 text-center text-white fs-5">
-                      {wrapAmount} <br /> ETHx
+                      {wrapAmount} <br /> {superTokenSymbol}
                     </Card.Text>
                     <Card.Text className="border-0 text-center text-white fs-6">
                       New Balance:{" "}
@@ -556,7 +779,7 @@ export default function EditStream(props: EditStreamProps) {
                   </Stack>
                 </Stack>
                 <Card.Text className="border-0 text-center text-gray fs-4">
-                  1 ETH = 1 ETHx
+                  1 {underlyingTokenName} = 1 {superTokenSymbol}
                 </Card.Text>
               </Stack>
             )}
@@ -595,13 +818,11 @@ export default function EditStream(props: EditStreamProps) {
                 width={30}
               />
               <Badge className="d-flex justify-content-around align-items-center w-50 bg-blue px-2 py-3 rounded-3 border-0 text-center text-white fs-5">
-                {truncateStr(MATCHING_POOL_ADDRESS, 12)}
+                {truncateStr(receiver, 12)}
                 <CopyTooltip
                   contentClick="Address copied"
                   contentHover="Copy address"
-                  handleCopy={() =>
-                    navigator.clipboard.writeText(MATCHING_POOL_ADDRESS)
-                  }
+                  handleCopy={() => navigator.clipboard.writeText(receiver)}
                   target={<Image src={CopyIcon} alt="copy" width={18} />}
                 />
               </Badge>
@@ -613,7 +834,11 @@ export default function EditStream(props: EditStreamProps) {
               >
                 <Card.Text className="w-33 m-0">New Stream</Card.Text>
                 <Stack direction="horizontal" gap={1} className="w-50 ms-1 p-2">
-                  <Image src={ETHLogo} alt="eth" width={16} />
+                  <Image
+                    src={superTokenIcon}
+                    alt="eth"
+                    width={isFundingMatchingPool ? 16 : 32}
+                  />
                   <Badge className="bg-aqua w-100 ps-2 pe-2 py-2 fs-4 text-start">
                     {convertStreamValueToInterval(
                       parseEther(amountPerTimeInterval),
@@ -695,14 +920,6 @@ export default function EditStream(props: EditStreamProps) {
                 `Submit (${totalTransactions})`
               )}
             </Button>
-            {step === Step.SUCCESS && (
-              <Alert
-                variant="success"
-                className="mt-2 rounded-4 text-wrap text-break"
-              >
-                Success!
-              </Alert>
-            )}
             {transactionError && (
               <Alert
                 variant="danger"
@@ -714,6 +931,55 @@ export default function EditStream(props: EditStreamProps) {
           </Stack>
         </Accordion.Collapse>
       </Card>
+      {step === Step.SUCCESS && (
+        <Card className="bg-blue p-4 text-white">
+          <Card.Text>
+            Donation stream confirmed! Thank you for your ongoing support to
+            public goods.
+          </Card.Text>
+          <Card.Text
+            as="span"
+            className="text-center"
+            style={{ fontSize: 100 }}
+          >
+            &#x1F64F;
+          </Card.Text>
+          <Card.Text>
+            Help spread the word about Streaming Quadratic Funding by sharing
+            your contribution with your network:
+          </Card.Text>
+          <Stack
+            direction="horizontal"
+            gap={2}
+            className="justify-content-center"
+          >
+            <Card.Link
+              className="d-flex flex-column twitter-share-button text-decoration-none text-white fs-5 p-2"
+              rel="noreferrer"
+              target="_blank"
+              href={`https://twitter.com/intent/tweet?text=I%20just%20opened%20a%20contribution%20stream%20to%20${granteeName}%20in%20the%20%23streamingquadratic%20funding%20pilot%20presented%20by%20%40thegeoweb%2C%20%40Superfluid_HQ%2C%20%26%20%40gitcoin%3A%0A%0Ahttps%3A%2F%2Fgeoweb.land%2Fgovernance%2F%0A%0AJoin%20me%20in%20making%20public%20goods%20funding%20history%20by%20donating%20in%20the%20world%27s%20first%20SQF%20round%21`}
+              data-size="large"
+            >
+              <Image src={XIcon} alt="x social" width={32} className="m-auto" />
+              Post to X
+            </Card.Link>
+            <Card.Link
+              className="d-flex flex-column text-decoration-none text-white fs-5 p-2"
+              rel="noreferrer"
+              target="_blank"
+              href={`https://warpcast.com/~/compose?text=I+just+opened+a+contribution+stream+to+${granteeName}+in+the+%23streamingquadraticfunding+pilot+round+presented+by+%40geoweb%2C+%40gitcoin%2C+%26+Superfluid%3A+%0A%0Ahttps%3A%2F%2Fgeoweb.land%2Fgovernance%2F+%0A%0AJoin+me+in+making+public+goods+funding+history+by+donating+in+the+world's+first+SQF+round%21`}
+            >
+              <Image
+                src={FarcasterIcon}
+                alt="x social"
+                width={32}
+                className="m-auto"
+              />
+              Cast to Farcaster
+            </Card.Link>
+          </Stack>
+        </Card>
+      )}
     </Accordion>
   );
 }

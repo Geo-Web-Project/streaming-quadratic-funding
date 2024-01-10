@@ -7,6 +7,7 @@ import {
 } from "@superfluid-finance/sdk-core";
 import { useNetwork } from "wagmi";
 import { useEthersSigner, useEthersProvider } from "./ethersAdapters";
+import { USDCX_ADDRESS } from "../lib/constants";
 
 export default function useSuperfluid(
   tokenAddress: string,
@@ -17,6 +18,7 @@ export default function useSuperfluid(
     NativeAssetSuperToken | WrapperSuperToken
   >();
   const [accountFlowRate, setAccountFlowRate] = useState("0");
+  const [underlyingTokenAllowance, setUnderlyingTokenAllowance] = useState("0");
   const [startingSuperTokenBalance, setStartingSuperTokenBalance] = useState({
     availableBalance: "0",
     timestamp: 0,
@@ -75,7 +77,15 @@ export default function useSuperfluid(
         providerOrSigner: provider,
       });
 
+    const underlyingToken = superToken.underlyingToken;
+    const underlyingTokenAllowance = await underlyingToken?.allowance({
+      owner: accountAdress,
+      spender: USDCX_ADDRESS,
+      providerOrSigner: provider,
+    });
+
     setAccountFlowRate(accountFlowRate);
+    setUnderlyingTokenAllowance(underlyingTokenAllowance ?? "0");
     setStartingSuperTokenBalance({
       availableBalance,
       timestamp: (new Date(startingDate).getTime() / 1000) | 0,
@@ -146,6 +156,25 @@ export default function useSuperfluid(
     await execTransaction(op);
   };
 
+  const underlyingTokenApprove = async (amount: string) => {
+    if (!superToken) {
+      throw Error("Super Token was not initialized");
+    }
+
+    const underlyingToken = superToken.underlyingToken;
+
+    if (!underlyingToken) {
+      throw Error("Underlying token was not found");
+    }
+
+    const op = underlyingToken.approve({
+      receiver: superToken.address,
+      amount,
+    });
+
+    await execTransaction(op);
+  };
+
   const execTransaction = async (op: Operation) => {
     if (!signer) {
       throw Error("No signer was found");
@@ -156,15 +185,35 @@ export default function useSuperfluid(
     await tx.wait();
   };
 
+  const updatePermissions = async (
+    flowOperator: string,
+    flowRateAllowance: string
+  ) => {
+    if (!superToken) {
+      throw Error("Super Token was not initialized");
+    }
+
+    const op = superToken.updateFlowOperatorPermissions({
+      flowOperator,
+      permissions: 7, // Create or update or delete
+      flowRateAllowance,
+    });
+
+    await execTransaction(op);
+  };
+
   return {
     sfFramework,
     superToken,
     startingSuperTokenBalance,
     accountFlowRate,
+    underlyingTokenAllowance,
     updateSfAccountInfo,
+    updatePermissions,
     getFlow,
     wrap,
     createFlow,
     updateFlow,
+    underlyingTokenApprove,
   };
 }

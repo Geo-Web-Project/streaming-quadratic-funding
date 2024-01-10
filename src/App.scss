@@ -21,6 +21,7 @@ $danger: #dc3545;
 $light: #f8f9fa;
 $success: #04bc42;
 $warning: #f7bdbd;
+$yellow: #ffe100;
 
 $theme-colors: (
   "primary": $primary,
@@ -36,6 +37,7 @@ $theme-colors: (
   "light": $light,
   "success": $success,
   "warning": $warning,
+  "yellow": $yellow,
 );
 
 $input-placeholder-color: $info;
@@ -78,7 +80,6 @@ body {
 
 main {
   margin: auto;
-  padding: 2rem;
 }
 
 .grantee-path {

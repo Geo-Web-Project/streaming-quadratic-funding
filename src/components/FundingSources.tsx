@@ -29,7 +29,7 @@ export default function FundingSources(props: FundingSourcesProps) {
     totalYou,
     totalDirect,
     totalMatching,
-    setShowTransactionPanel,
+    setTransactionPanelState,
   } = props;
 
   const totalUsdc = totalYou + totalDirect;
@@ -129,7 +129,11 @@ export default function FundingSources(props: FundingSourcesProps) {
             variant="success"
             className="d-flex flex-column justify-content-center h-100 p-0 fs-3 text-white fw-bold"
             onClick={() => {
-              setShowTransactionPanel(true);
+              setTransactionPanelState({
+                show: true,
+                isMatchingPool: true,
+                granteeIndex: null,
+              });
             }}
           >
             <Image src={hand} alt="hand" width={26} />

@@ -8,6 +8,7 @@ import Spinner from "react-bootstrap/Spinner";
 import CloseIcon from "../assets/close.svg";
 import XLogo from "../assets/x-logo.svg";
 import WebIcon from "../assets/web.svg";
+import { TransactionPanelState } from "./StreamingQuadraticFunding";
 import {
   TimeInterval,
   unitOfTime,
@@ -15,7 +16,7 @@ import {
   roundWeiAmount,
 } from "../lib/utils";
 
-interface GranteeDetailsProps {
+interface RecipientDetailsProps {
   header: string;
   name: string;
   image: string;
@@ -23,10 +24,13 @@ interface GranteeDetailsProps {
   website: string;
   social: string;
   flowRateToReceiver: string;
-  setShowTransactionPanel: React.Dispatch<React.SetStateAction<boolean>>;
+  isMatchingPool: boolean;
+  setTransactionPanelState: React.Dispatch<
+    React.SetStateAction<TransactionPanelState>
+  >;
 }
 
-export default function GranteeDetails(props: GranteeDetailsProps) {
+export default function RecipientDetails(props: RecipientDetailsProps) {
   const {
     header,
     name,
@@ -35,7 +39,8 @@ export default function GranteeDetails(props: GranteeDetailsProps) {
     website,
     social,
     flowRateToReceiver,
-    setShowTransactionPanel,
+    isMatchingPool,
+    setTransactionPanelState,
   } = props;
 
   const { address } = useAccount();
@@ -50,7 +55,13 @@ export default function GranteeDetails(props: GranteeDetailsProps) {
         <Button
           variant="transparent"
           className="float-end p-0 pe-0"
-          onClick={() => setShowTransactionPanel(false)}
+          onClick={() =>
+            setTransactionPanelState({
+              show: false,
+              isMatchingPool: false,
+              granteeIndex: null,
+            })
+          }
         >
           <Image src={CloseIcon} alt="close" width={28} />
         </Button>
@@ -84,7 +95,7 @@ export default function GranteeDetails(props: GranteeDetailsProps) {
                   )}
                 </Card.Text>
                 <Card.Text as="span" className="fs-6">
-                  ETHx <br />
+                  {isMatchingPool ? "ETHx" : "USDCx"} <br />
                   per <br />
                   month
                 </Card.Text>

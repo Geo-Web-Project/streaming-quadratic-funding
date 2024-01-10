@@ -1,4 +1,3 @@
-import { parseEther } from "viem";
 import Stack from "react-bootstrap/Stack";
 import Card from "react-bootstrap/Card";
 import Button from "react-bootstrap/Button";
@@ -6,6 +5,7 @@ import Image from "react-bootstrap/Image";
 import Badge from "react-bootstrap/Badge";
 import HandIcon from "../assets/hand.svg";
 import { Dimensions } from "./Visualization";
+import { TransactionPanelState } from "./StreamingQuadraticFunding";
 import { perSecondToPerMonth } from "../lib/utils";
 import { VIZ_CARD_WIDTH_GRANTEE } from "../lib/constants";
 
@@ -19,8 +19,9 @@ interface GranteesProps {
   datasetEth: any;
   grantees: string[];
   descriptions: string[];
-  poolYou: any;
-  setPoolYou: React.Dispatch<React.SetStateAction<any>>;
+  setTransactionPanelState: React.Dispatch<
+    React.SetStateAction<TransactionPanelState>
+  >;
 }
 
 export default function Grantees(props: GranteesProps) {
@@ -34,8 +35,7 @@ export default function Grantees(props: GranteesProps) {
     datasetEth,
     grantees,
     descriptions,
-    poolYou,
-    setPoolYou,
+    setTransactionPanelState,
   } = props;
 
   return (
@@ -60,13 +60,13 @@ export default function Grantees(props: GranteesProps) {
           <Button
             variant="success"
             className="d-flex flex-column justify-content-center align-items-center h-100 p-0 fs-3 text-white fw-bold"
-            onClick={() => {
-              const _poolYou = [...poolYou];
-              poolYou[i].perSecondRate = (
-                BigInt(poolYou[i].perSecondRate) + parseEther("0.00000216")
-              ).toString();
-              setPoolYou(_poolYou);
-            }}
+            onClick={() =>
+              setTransactionPanelState({
+                show: true,
+                isMatchingPool: false,
+                granteeIndex: i,
+              })
+            }
           >
             <Image src={HandIcon} alt="donate" width={26} />
           </Button>

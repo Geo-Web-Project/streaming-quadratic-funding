@@ -1,26 +1,64 @@
 import { useState } from "react";
 import Container from "react-bootstrap/Container";
+import Stack from "react-bootstrap/Stack";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import Spinner from "react-bootstrap/Spinner";
 import FundMatchingPool from "./FundMatchingPool";
 import Visualization from "./Visualization";
+import FundGrantee from "./FundGrantee";
+import SQFIcon from "../assets/sqf.png";
+import useAllo from "../hooks/allo";
+import { recipientIds } from "../lib/recipientIds";
+import poolYou from "../lib/pool-you.json";
+import poolDirect from "../lib/pool-direct.json";
+import poolMatching from "../lib/pool-matching.json";
+
+export interface TransactionPanelState {
+  show: boolean;
+  isMatchingPool: boolean;
+  granteeIndex: number | null;
+}
+
+export interface Grantee {
+  name: string;
+  description?: string;
+  address?: string;
+  perSecondRate: string;
+}
 
 export default function StreamingQuadraticFunding() {
-  const [showTransactionPanel, setShowTransactionPanel] =
-    useState<boolean>(false);
+  const [transactionPanelState, setTransactionPanelState] =
+    useState<TransactionPanelState>({
+      show: false,
+      granteeIndex: null,
+      isMatchingPool: false,
+    });
+
+  const { recipients } = useAllo();
+
+  if (!recipients) {
+    return (
+      <Spinner
+        animation="border"
+        role="status"
+        className="position-absolute top-50 start-50 text-white"
+      ></Spinner>
+    );
+  }
 
   return (
-    <Container fluid className="p-0">
+    <Container fluid>
       <Row>
-        <Col xs="3">
-          {showTransactionPanel && (
+        {transactionPanelState.show && transactionPanelState.isMatchingPool && (
+          <Col xs="3" className="p-0">
             <FundMatchingPool
-              setShowTransactionPanel={setShowTransactionPanel}
+              setTransactionPanelState={setTransactionPanelState}
             />
-          )}
-        </Col>
-        <Col xs={showTransactionPanel ? "9" : 0}>
-          <div className="d-flex flex-column justify-content-stretch pt-2">
+          </Col>
+        )}
+        <Col xs={transactionPanelState.show ? "9" : 0} className="px-4">
+          <Stack direction="vertical" className="justify-content-stretch pt-2">
             <p className="d-flex fs-3 text-aqua mb-0">
               Streaming Quadratic Funding
             </p>
@@ -30,12 +68,36 @@ export default function StreamingQuadraticFunding() {
             <p className="text-info fs-5 mb-0">
               Beta Run - January 15 - April 15, 2024
             </p>
-          </div>
+          </Stack>
           <Visualization
-            showTransactionPanel={showTransactionPanel}
-            setShowTransactionPanel={setShowTransactionPanel}
+            transactionPanelState={transactionPanelState}
+            setTransactionPanelState={setTransactionPanelState}
+            poolYou={poolYou}
+            poolDirect={poolDirect}
+            poolMatching={poolMatching}
           />
         </Col>
+        {transactionPanelState.show &&
+          transactionPanelState.granteeIndex !== null && (
+            <Col xs="3" className="p-0">
+              <FundGrantee
+                setTransactionPanelState={setTransactionPanelState}
+                name={poolDirect[transactionPanelState.granteeIndex].name}
+                image={SQFIcon}
+                website="https://geoweb.network"
+                social="https://twitter.com/thegeoweb"
+                recipientId={recipientIds[transactionPanelState.granteeIndex]}
+                granteeAddress={
+                  recipients[transactionPanelState.granteeIndex].superApp
+                }
+                description={
+                  <>
+                    {poolDirect[transactionPanelState.granteeIndex].description}
+                  </>
+                }
+              />
+            </Col>
+          )}
       </Row>
     </Container>
   );

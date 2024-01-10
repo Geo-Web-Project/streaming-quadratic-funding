@@ -4,15 +4,16 @@ import {
   darkTheme,
 } from "@rainbow-me/rainbowkit";
 import { configureChains, createConfig, WagmiConfig } from "wagmi";
-import { optimism, optimismGoerli } from "wagmi/chains";
+import { optimismGoerli, baseGoerli } from "wagmi/chains";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import Layout from "./components/Layout";
 import StreamingQuadraticFunding from "./components/StreamingQuadraticFunding";
+import { AlloContextProvider } from "./context/Allo";
 import "@rainbow-me/rainbowkit/styles.css";
 import "./App.scss";
 
 const { chains, publicClient } = configureChains(
-  [optimism, optimismGoerli],
+  [optimismGoerli, baseGoerli],
   [alchemyProvider({ apiKey: import.meta.env.VITE_ALCHEMY_ID })]
 );
 
@@ -37,9 +38,11 @@ function App() {
           modalSize="compact"
           theme={darkTheme()}
         >
-          <Layout>
-            <StreamingQuadraticFunding />
-          </Layout>
+          <AlloContextProvider>
+            <Layout>
+              <StreamingQuadraticFunding />
+            </Layout>
+          </AlloContextProvider>
         </RainbowKitProvider>
       </WagmiConfig>
     </>

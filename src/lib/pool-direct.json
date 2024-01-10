@@ -2,31 +2,37 @@
     {
         "name": "Gov4Git",
         "description": "Gov4Git: Decentralized governance for collaborative communities...",
+        "address": "0x08E350796d1ffc87837072D3A92975FdF7a7B11c",
         "perSecondRate": "4800000000000"
     },
     {
         "name": "Open Source Observer",
         "description": "We are cultivating a growing registry of open source software projects...",
+        "address": "0x433237E7C33834E250D63D3a6A066DcE1f5c0a4b",
         "perSecondRate": "17800000000000"
     },
     {
         "name": "Avelous Hacking",
         "description": "1. Eth-Splitter https://app.buidlguidl.com/build...",
+        "address": "0x9F56fa49aF3b3e6FdeBe64763bd34Ae4aA1C4106",
         "perSecondRate": "65800000000000"
     },
     {
         "name": "OpSci",
         "description": "OpSci is an open source non-profit that builds community and develops...",
+        "address": "0x9F56fa49aF3b3e6FdeBe64763bd34Ae4aA1C4106",
         "perSecondRate": "24200000000000"
     },
     {
         "name": "OpenCann",
         "description": "Reshape the cannabis research landscape through decentralized...",
+        "address": "0x4132Fd10d7c57adAA18E39F19C93506ddc0c69C3",
         "perSecondRate": "22000000000000"
     },
     {
         "name": "Blockscout",
         "description": "Open-Source explorer are a vital public good Help Blockscout close...",
+        "address": "0xEb2982Ad514468F1E04F4cAEDc4f27cF2327E9D8",
         "perSecondRate": "65600000000000"
     }
 ]
