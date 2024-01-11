@@ -228,21 +228,10 @@ export default function EditStream(props: EditStreamProps) {
 
   return (
     <Accordion activeKey={step}>
-      <Card
-        className="bg-blue text-white rounded-0"
-        style={{
-          border: "none",
-          borderLeft: "1px solid #111320",
-          borderRight: "1px solid #111320",
-          borderTop:
-            step === Step.SELECT_AMOUNT ? "1px dashed #31374E" : "none",
-          borderBottom:
-            step === Step.SELECT_AMOUNT ? "1px dashed #31374E" : "none",
-        }}
-      >
+      <Card className="bg-blue text-white rounded-0 rounded-top-4 border-0 border-bottom border-purple">
         <Button
-          variant={step === Step.SELECT_AMOUNT ? "dark" : "transparent"}
-          className="d-flex align-items-center gap-2 p-2 text-white border-0 rounded-0 shadow-none"
+          variant="transparent"
+          className="d-flex align-items-center gap-2 p-3 text-white border-0 rounded-0 shadow-none"
           style={{
             pointerEvents: step === Step.SELECT_AMOUNT ? "none" : "auto",
           }}
@@ -265,17 +254,14 @@ export default function EditStream(props: EditStreamProps) {
           </Badge>
           {Step.SELECT_AMOUNT}
         </Button>
-        <Accordion.Collapse
-          eventKey={Step.SELECT_AMOUNT}
-          className="bg-dark px-2 py-3"
-        >
+        <Accordion.Collapse eventKey={Step.SELECT_AMOUNT} className="p-3 pt-0">
           <Stack gap={3}>
             <Stack direction="horizontal" gap={2}>
-              <Badge className="d-flex align-items-center gap-1 bg-blue w-50 rounded-3 px-3 py-2 fs-4 fw-normal">
+              <Badge className="d-flex align-items-center gap-1 bg-purple w-50 rounded-3 px-3 py-2 fs-4 fw-normal">
                 <Image src={OpLogo} alt="optimism" width={18} />
                 {chain?.id === 420 ? "OP Goerli" : "OP Mainnet"}
               </Badge>
-              <Badge className="d-flex align-items-center gap-1 bg-blue w-50 rounded-3 px-3 py-2 fs-4 fw-normal">
+              <Badge className="d-flex align-items-center gap-1 bg-purple w-50 rounded-3 px-3 py-2 fs-4 fw-normal">
                 <Image
                   src={superTokenIcon}
                   alt="optimism"
@@ -293,16 +279,16 @@ export default function EditStream(props: EditStreamProps) {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   handleAmountSelection(e, setAmountPerTimeInterval)
                 }
-                className="bg-blue w-50 border-0 rounded-end-0 text-white shadow-none"
+                className="bg-purple w-50 border-0 rounded-end-0 text-white shadow-none"
               />
               <Dropdown className="w-50">
                 <Dropdown.Toggle
                   variant="blue"
-                  className="d-flex justify-content-between align-items-center w-100 border-0 rounded-start-0 fs-4"
+                  className="d-flex justify-content-between align-items-center w-100 bg-purple border-0 rounded-start-0 fs-4"
                 >
                   {timeInterval}
                 </Dropdown.Toggle>
-                <Dropdown.Menu variant="dark" className="bg-blue">
+                <Dropdown.Menu variant="dark" className="bg-purple">
                   <Dropdown.Item
                     className="text-white"
                     onClick={() => {
@@ -383,19 +369,10 @@ export default function EditStream(props: EditStreamProps) {
           </Stack>
         </Accordion.Collapse>
       </Card>
-      <Card
-        className="bg-blue text-white rounded-0"
-        style={{
-          border: "none",
-          borderLeft: "1px solid #111320",
-          borderRight: "1px solid #111320",
-          borderTop: step === Step.WRAP ? "1px dashed #31374E" : "none",
-          borderBottom: step === Step.WRAP ? "1px dashed #31374E" : "none",
-        }}
-      >
+      <Card className="bg-blue text-white rounded-0 border-0 border-bottom border-purple">
         <Button
-          variant={step === Step.WRAP ? "dark" : "transparent"}
-          className="d-flex align-items-center gap-2 p-2 border-0 rounded-0 text-white shadow-none"
+          variant="transparent"
+          className="d-flex align-items-center gap-2 p-3 border-0 rounded-0 text-white shadow-none"
           onClick={() => setStep(Step.WRAP)}
           style={{
             pointerEvents:
@@ -424,27 +401,27 @@ export default function EditStream(props: EditStreamProps) {
           </Badge>
           {Step.WRAP}
         </Button>
-        <Accordion.Collapse eventKey={Step.WRAP} className="bg-dark px-2 py-3">
+        <Accordion.Collapse eventKey={Step.WRAP} className="p-3 pt-0">
           <Stack direction="vertical" gap={3}>
             <Stack direction="vertical" className="position-relative">
               <Stack
                 direction="horizontal"
                 gap={2}
-                className="w-100 bg-blue p-2 rounded-4 rounded-bottom-0"
+                className="w-100 bg-purple p-2 rounded-4 rounded-bottom-0"
               >
                 <Form.Control
                   type="text"
                   placeholder="0"
                   disabled={!address}
                   value={wrapAmount ?? ""}
-                  className="bg-blue w-75 border-0 text-white shadow-none"
+                  className="bg-purple w-75 border-0 text-white shadow-none"
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     handleAmountSelection(e, setWrapAmount)
                   }
                 />
                 <Badge
                   as="div"
-                  className="d-flex justify-content-center align-items-center w-25 gap-1 bg-purple py-2 border border-dark rounded-3"
+                  className="d-flex justify-content-center align-items-center w-25 gap-1 bg-dark py-2 border border-dark rounded-3"
                 >
                   <Image
                     src={superTokenIcon}
@@ -454,7 +431,7 @@ export default function EditStream(props: EditStreamProps) {
                   <Card.Text className="p-0">{underlyingTokenName}</Card.Text>
                 </Badge>
               </Stack>
-              <Card.Text className="w-100 bg-blue m-0 mb-2 px-2 pb-2 rounded-bottom-4 text-end fs-5">
+              <Card.Text className="w-100 bg-purple m-0 mb-2 px-2 pb-2 rounded-bottom-4 text-end fs-5">
                 Balance:{" "}
                 {underlyingTokenBalance
                   ? underlyingTokenBalance.formatted.slice(0, 8)
@@ -469,7 +446,7 @@ export default function EditStream(props: EditStreamProps) {
               <Stack
                 direction="horizontal"
                 gap={2}
-                className="w-100 bg-blue p-2 rounded-4 rounded-bottom-0"
+                className="w-100 bg-purple p-2 rounded-4 rounded-bottom-0"
               >
                 <Form.Control
                   type="text"
@@ -479,14 +456,14 @@ export default function EditStream(props: EditStreamProps) {
                     wrapAmount ??
                     formatEther(parseEther(amountPerTimeInterval) * BigInt(3))
                   }
-                  className="bg-blue w-75 border-0 text-white shadow-none"
+                  className="bg-purple w-75 border-0 text-white shadow-none"
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     handleAmountSelection(e, setWrapAmount)
                   }
                 />
                 <Badge
                   as="div"
-                  className="d-flex justify-content-center align-items-center gap-1 w-25 bg-purple py-2 border border-dark rounded-3"
+                  className="d-flex justify-content-center align-items-center gap-1 w-25 bg-dark py-2 border border-dark rounded-3"
                 >
                   <Image
                     src={superTokenIcon}
@@ -496,7 +473,7 @@ export default function EditStream(props: EditStreamProps) {
                   <Card.Text className="p-0">{superTokenSymbol}</Card.Text>
                 </Badge>
               </Stack>
-              <Card.Text className="w-100 bg-blue m-0 px-2 pb-2 rounded-bottom-4 text-end fs-5">
+              <Card.Text className="w-100 bg-purple m-0 px-2 pb-2 rounded-bottom-4 text-end fs-5">
                 Balance: {formatEther(superTokenBalance).slice(0, 8)}
               </Card.Text>
             </Stack>
@@ -564,21 +541,10 @@ export default function EditStream(props: EditStreamProps) {
         </Accordion.Collapse>
       </Card>
       {!isFundingMatchingPool && (
-        <Card
-          className="bg-blue text-white rounded-0"
-          style={{
-            border: "none",
-            borderLeft: "1px solid #111320",
-            borderRight: "1px solid #111320",
-            borderTop:
-              step === Step.MINT_PASSPORT ? "1px dashed #31374E" : "none",
-            borderBottom:
-              step === Step.MINT_PASSPORT ? "1px dashed #31374E" : "none",
-          }}
-        >
+        <Card className="bg-blue text-white rounded-0 border-0 border-bottom border-purple">
           <Button
-            variant={step === Step.MINT_PASSPORT ? "dark" : "transparent"}
-            className="d-flex align-items-center gap-2 p-2 border-0 rounded-0 text-white shadow-none"
+            variant="transparent"
+            className="d-flex align-items-center gap-2 p-3 border-0 rounded-0 text-white shadow-none"
             style={{
               pointerEvents: step !== Step.REVIEW ? "none" : "auto",
             }}
@@ -606,10 +572,7 @@ export default function EditStream(props: EditStreamProps) {
             </Badge>
             {Step.MINT_PASSPORT}
           </Button>
-          <Accordion.Collapse
-            eventKey={Step.MINT_PASSPORT}
-            className="bg-dark p-2"
-          >
+          <Accordion.Collapse eventKey={Step.MINT_PASSPORT} className="p-3 py-0">
             <Stack direction="vertical" gap={2}>
               <Card.Text className="m-0 border-bottom border-secondary text-secondary">
                 Current Score
@@ -673,19 +636,10 @@ export default function EditStream(props: EditStreamProps) {
           </Accordion.Collapse>
         </Card>
       )}
-      <Card
-        className="bg-blue text-white rounded-0"
-        style={{
-          border: "none",
-          borderLeft: "1px solid #111320",
-          borderRight: "1px solid #111320",
-          borderTop: step === Step.REVIEW ? "1px dashed #31374E" : "none",
-          borderBottom: step === Step.REVIEW ? "1px dashed #31374E" : "none",
-        }}
-      >
+      <Card className="bg-blue text-white rounded-0 rounded-bottom-4 border-0">
         <Button
-          variant={step === Step.REVIEW ? "dark" : "transparent"}
-          className="d-flex align-items-center gap-2 p-2 border-0 rounded-0 text-white shadow-none"
+          variant="transparent"
+          className="d-flex align-items-center gap-2 p-3 border-0 rounded-0 text-white shadow-none"
           style={{
             pointerEvents: "none",
           }}
@@ -713,10 +667,7 @@ export default function EditStream(props: EditStreamProps) {
           </Badge>
           {Step.REVIEW}
         </Button>
-        <Accordion.Collapse
-          eventKey={Step.REVIEW}
-          className="bg-dark px-2 py-3"
-        >
+        <Accordion.Collapse eventKey={Step.REVIEW} className="p-3 pt-0">
           <Stack direction="vertical" gap={2}>
             {Number(wrapAmount) > 0 && (
               <Stack direction="vertical" gap={1}>
@@ -731,7 +682,7 @@ export default function EditStream(props: EditStreamProps) {
                   <Stack
                     direction="vertical"
                     gap={2}
-                    className="justify-content-center align-items-center bg-blue p-2 rounded-4"
+                    className="justify-content-center align-items-center bg-purple p-2 rounded-4"
                   >
                     <Image
                       src={superTokenIcon}
@@ -760,7 +711,7 @@ export default function EditStream(props: EditStreamProps) {
                   <Stack
                     direction="vertical"
                     gap={2}
-                    className="justify-content-center align-items-center bg-blue p-2 rounded-4"
+                    className="justify-content-center align-items-center bg-purple p-2 rounded-4"
                   >
                     <Image
                       src={superTokenIcon}
@@ -800,7 +751,7 @@ export default function EditStream(props: EditStreamProps) {
               </Card.Text>
             </Stack>
             <Stack direction="horizontal">
-              <Badge className="d-flex justify-content-around align-items-center w-50 bg-blue py-3 rounded-3 border-0 text-center text-white fs-5">
+              <Badge className="d-flex justify-content-around align-items-center w-50 bg-purple py-3 rounded-3 border-0 text-center text-white fs-5">
                 {truncateStr(address ?? "", 12)}
                 <CopyTooltip
                   contentClick="Address copied"
@@ -817,7 +768,7 @@ export default function EditStream(props: EditStreamProps) {
                 alt="forward arrow"
                 width={30}
               />
-              <Badge className="d-flex justify-content-around align-items-center w-50 bg-blue px-2 py-3 rounded-3 border-0 text-center text-white fs-5">
+              <Badge className="d-flex justify-content-around align-items-center w-50 bg-purple px-2 py-3 rounded-3 border-0 text-center text-white fs-5">
                 {truncateStr(receiver, 12)}
                 <CopyTooltip
                   contentClick="Address copied"
@@ -827,28 +778,26 @@ export default function EditStream(props: EditStreamProps) {
                 />
               </Badge>
             </Stack>
-            <Stack direction="vertical" gap={2} className="bg-purple rounded-4">
-              <Stack
-                direction="horizontal"
-                className="border-bottom border-dark p-2"
-              >
-                <Card.Text className="w-33 m-0">New Stream</Card.Text>
-                <Stack direction="horizontal" gap={1} className="w-50 ms-1 p-2">
-                  <Image
-                    src={superTokenIcon}
-                    alt="eth"
-                    width={isFundingMatchingPool ? 16 : 32}
-                  />
-                  <Badge className="bg-aqua w-100 ps-2 pe-2 py-2 fs-4 text-start">
-                    {convertStreamValueToInterval(
-                      parseEther(amountPerTimeInterval),
-                      timeInterval,
-                      TimeInterval.MONTH
-                    )}
-                  </Badge>
-                </Stack>
-                <Card.Text className="m-0 ms-1 fs-5">/month</Card.Text>
+            <Stack
+              direction="horizontal"
+              className="mt-2 bg-purple rounded-4 p-2"
+            >
+              <Card.Text className="w-33 m-0">New Stream</Card.Text>
+              <Stack direction="horizontal" gap={1} className="w-50 ms-1 p-2">
+                <Image
+                  src={superTokenIcon}
+                  alt="eth"
+                  width={isFundingMatchingPool ? 16 : 32}
+                />
+                <Badge className="bg-aqua w-100 ps-2 pe-2 py-2 fs-4 text-start">
+                  {convertStreamValueToInterval(
+                    parseEther(amountPerTimeInterval),
+                    timeInterval,
+                    TimeInterval.MONTH
+                  )}
+                </Badge>
               </Stack>
+              <Card.Text className="m-0 ms-1 fs-5">/month</Card.Text>
             </Stack>
             {accountFlowRate &&
               BigInt(-accountFlowRate) -
@@ -971,7 +920,7 @@ export default function EditStream(props: EditStreamProps) {
             >
               <Image
                 src={FarcasterIcon}
-                alt="x social"
+                alt="farcaster"
                 width={32}
                 className="m-auto"
               />

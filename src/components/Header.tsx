@@ -10,7 +10,7 @@ export default function Header() {
       <Container fluid>
         <Row className="justify-content-between align-items-center w-100">
           <Col xs={5}>
-            <h1 className="fs-2 ps-3">Streaming Quadratic Funding</h1>
+            <h1 className="fs-2 ps-2">Streaming Quadratic Funding</h1>
           </Col>
           <Col xs="2" className="d-flex justify-content-end align-items-center">
             <ConnectWallet />

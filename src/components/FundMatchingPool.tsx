@@ -2,9 +2,12 @@ import { useState } from "react";
 import { useAccount } from "wagmi";
 import Stack from "react-bootstrap/Stack";
 import Card from "react-bootstrap/Card";
+import Button from "react-bootstrap/Button";
+import Image from "react-bootstrap/Image";
 import RecipientDetails from "./RecipientDetails";
 import EditStream from "./EditStream";
 import SQFIcon from "../assets/sqf.png";
+import CloseIcon from "../assets/close.svg";
 import useSuperfluid from "../hooks/superfluid";
 import { TransactionPanelState } from "./StreamingQuadraticFunding";
 import { MATCHING_POOL_ADDRESS } from "../lib/constants";
@@ -16,6 +19,8 @@ interface FundMatchingPoolProps {
 }
 
 export default function FundMatchingPool(props: FundMatchingPoolProps) {
+  const { setTransactionPanelState } = props;
+
   const [flowRateToReceiver, setFlowRateToReceiver] = useState("");
   const [newFlowRate, setNewFlowRate] = useState("");
 
@@ -23,13 +28,36 @@ export default function FundMatchingPool(props: FundMatchingPoolProps) {
   const { createFlow, updateFlow } = useSuperfluid("ETHx", address);
 
   return (
-    <div className="h-100 bg-dark border-top border-secondary px-4">
+    <Stack
+      direction="vertical"
+      gap={2}
+      className="position-relative h-100 bg-dark border-top border-secondary px-3"
+    >
+      <Stack
+        direction="horizontal"
+        className="justify-content-between align-items-center py-2 text-white"
+      >
+        <Card.Text className="fs-3 m-0">Fund Matching Pool</Card.Text>
+        <Button
+          variant="transparent"
+          className="position-absolute end-0 px-2 py-0"
+          onClick={() =>
+            setTransactionPanelState({
+              show: false,
+              isMatchingPool: false,
+              granteeIndex: null,
+            })
+          }
+        >
+          <Image src={CloseIcon} alt="close" width={28} />
+        </Button>
+      </Stack>
       <Stack
         direction="vertical"
-        className="bg-blue mt-3 rounded-4 text-white pb-3"
+        gap={4}
+        className="rounded-4 text-white pb-3 flex-grow-0"
       >
         <RecipientDetails
-          header="Fund Matching Stream"
           name="Matching Stream"
           image={SQFIcon}
           website="https://geoweb.network"
@@ -79,6 +107,6 @@ export default function FundMatchingPool(props: FundMatchingPoolProps) {
           ]}
         />
       </Stack>
-    </div>
+    </Stack>
   );
 }

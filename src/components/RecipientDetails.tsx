@@ -5,10 +5,8 @@ import Button from "react-bootstrap/Button";
 import Image from "react-bootstrap/Image";
 import Badge from "react-bootstrap/Badge";
 import Spinner from "react-bootstrap/Spinner";
-import CloseIcon from "../assets/close.svg";
 import XLogo from "../assets/x-logo.svg";
 import WebIcon from "../assets/web.svg";
-import { TransactionPanelState } from "./StreamingQuadraticFunding";
 import {
   TimeInterval,
   unitOfTime,
@@ -17,7 +15,6 @@ import {
 } from "../lib/utils";
 
 interface RecipientDetailsProps {
-  header: string;
   name: string;
   image: string;
   description: JSX.Element;
@@ -25,14 +22,10 @@ interface RecipientDetailsProps {
   social: string;
   flowRateToReceiver: string;
   isMatchingPool: boolean;
-  setTransactionPanelState: React.Dispatch<
-    React.SetStateAction<TransactionPanelState>
-  >;
 }
 
 export default function RecipientDetails(props: RecipientDetailsProps) {
   const {
-    header,
     name,
     image,
     description,
@@ -40,32 +33,12 @@ export default function RecipientDetails(props: RecipientDetailsProps) {
     social,
     flowRateToReceiver,
     isMatchingPool,
-    setTransactionPanelState,
   } = props;
 
   const { address } = useAccount();
 
   return (
-    <>
-      <Stack
-        direction="horizontal"
-        className="justify-content-between align-items-center p-2"
-      >
-        <Card.Text className="fs-3 pe-0 m-0">{header}</Card.Text>
-        <Button
-          variant="transparent"
-          className="float-end p-0 pe-0"
-          onClick={() =>
-            setTransactionPanelState({
-              show: false,
-              isMatchingPool: false,
-              granteeIndex: null,
-            })
-          }
-        >
-          <Image src={CloseIcon} alt="close" width={28} />
-        </Button>
-      </Stack>
+    <Stack direction="vertical" className="bg-blue rounded-4 p-2 pt-0">
       <Stack direction="horizontal" gap={2} className="align-items-end">
         <Image src={image} alt="SQF" width={128} />
         <Card className="bg-transparent text-white border-0">
@@ -145,6 +118,6 @@ export default function RecipientDetails(props: RecipientDetailsProps) {
       <Card.Text className="m-0 p-2 fs-5" style={{ maxWidth: 500 }}>
         {description}
       </Card.Text>
-    </>
+    </Stack>
   );
 }
