@@ -881,7 +881,7 @@ export default function EditStream(props: EditStreamProps) {
         </Accordion.Collapse>
       </Card>
       {step === Step.SUCCESS && (
-        <Card className="bg-blue p-4 text-white">
+        <Card className="bg-blue mt-4 p-4 text-white rounded-4">
           <Card.Text>
             Donation stream confirmed! Thank you for your ongoing support to
             public goods.

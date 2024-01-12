@@ -4,14 +4,22 @@ import {
   NativeAssetSuperToken,
   WrapperSuperToken,
   Operation,
+  Host,
 } from "@superfluid-finance/sdk-core";
 import { useNetwork } from "wagmi";
+import { encodeFunctionData, Address } from "viem";
 import { useEthersSigner, useEthersProvider } from "./ethersAdapters";
-import { USDCX_ADDRESS } from "../lib/constants";
+import { gdaAbi } from "../lib/abi/gda";
+import {
+  SUPERFLUID_HOST_ADDRESS,
+  USDCX_ADDRESS,
+  GDA_CONTRACT_ADDRESS,
+  GDA_POOL_ADDRESS,
+} from "../lib/constants";
 
 export default function useSuperfluid(
   tokenAddress: string,
-  accountAdress?: string
+  accountAddress?: string
 ) {
   const [sfFramework, setSfFramework] = useState<Framework>();
   const [superToken, setSuperToken] = useState<
@@ -27,10 +35,11 @@ export default function useSuperfluid(
   const { chain } = useNetwork();
   const signer = useEthersSigner();
   const provider = useEthersProvider();
+  const host = new Host(SUPERFLUID_HOST_ADDRESS);
 
   useEffect(() => {
     (async () => {
-      if (!chain || !accountAdress) {
+      if (!chain || !accountAddress) {
         return;
       }
 
@@ -52,7 +61,7 @@ export default function useSuperfluid(
       setSuperToken(superToken);
       setSfFramework(sfFramework);
     })();
-  }, [chain, accountAdress]);
+  }, [chain, accountAddress]);
 
   const updateSfAccountInfo = async (
     superToken: NativeAssetSuperToken | WrapperSuperToken
@@ -61,25 +70,25 @@ export default function useSuperfluid(
       throw Error("Super Token was not initialized");
     }
 
-    if (!accountAdress) {
+    if (!accountAddress) {
       throw Error("Could not find the account address");
     }
 
     const accountFlowRate = await superToken.getNetFlow({
-      account: accountAdress,
+      account: accountAddress,
       providerOrSigner: provider,
     });
     const timestamp = (Date.now() / 1000) | 0;
     const { availableBalance, timestamp: startingDate } =
       await superToken.realtimeBalanceOf({
-        account: accountAdress,
+        account: accountAddress,
         timestamp,
         providerOrSigner: provider,
       });
 
     const underlyingToken = superToken.underlyingToken;
     const underlyingTokenAllowance = await underlyingToken?.allowance({
-      owner: accountAdress,
+      owner: accountAddress,
       spender: USDCX_ADDRESS,
       providerOrSigner: provider,
     });
@@ -202,6 +211,36 @@ export default function useSuperfluid(
     await execTransaction(op);
   };
 
+  const gdaDistributeFlow = async (flowRate: string) => {
+    if (!superToken) {
+      throw Error("Super Token was not initialized");
+    }
+
+    if (!accountAddress) {
+      throw Error("Could not find the account address");
+    }
+
+    const distributeFlowData = encodeFunctionData({
+      abi: gdaAbi,
+      functionName: "distributeFlow",
+      args: [
+        superToken.address as Address,
+        accountAddress as Address,
+        GDA_POOL_ADDRESS,
+        BigInt(flowRate),
+        "0x",
+      ],
+    });
+    const op = host.callAgreement(
+      GDA_CONTRACT_ADDRESS,
+      distributeFlowData,
+      "0x",
+      {}
+    );
+
+    await execTransaction(op);
+  };
+
   return {
     sfFramework,
     superToken,
@@ -210,6 +249,7 @@ export default function useSuperfluid(
     underlyingTokenAllowance,
     updateSfAccountInfo,
     updatePermissions,
+    gdaDistributeFlow,
     getFlow,
     wrap,
     createFlow,

@@ -25,7 +25,7 @@ export default function FundMatchingPool(props: FundMatchingPoolProps) {
   const [newFlowRate, setNewFlowRate] = useState("");
 
   const { address } = useAccount();
-  const { createFlow, updateFlow } = useSuperfluid("ETHx", address);
+  const { gdaDistributeFlow } = useSuperfluid("ETHx", address);
 
   return (
     <Stack
@@ -90,21 +90,7 @@ export default function FundMatchingPool(props: FundMatchingPoolProps) {
           newFlowRate={newFlowRate}
           setNewFlowRate={setNewFlowRate}
           isFundingMatchingPool={true}
-          transactionsToQueue={[
-            BigInt(flowRateToReceiver) !== BigInt(0)
-              ? () =>
-                  updateFlow(
-                    address ?? "",
-                    MATCHING_POOL_ADDRESS,
-                    newFlowRate.toString()
-                  )
-              : () =>
-                  createFlow(
-                    address ?? "",
-                    MATCHING_POOL_ADDRESS,
-                    newFlowRate.toString()
-                  ),
-          ]}
+          transactionsToQueue={[async () => gdaDistributeFlow(newFlowRate)]}
         />
       </Stack>
     </Stack>
