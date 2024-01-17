@@ -13,26 +13,38 @@ import Image from "react-bootstrap/Image";
 import RecipientDetails from "./RecipientDetails";
 import EditStream from "./EditStream";
 import CloseIcon from "../assets/close.svg";
-import useSuperfluid from "../hooks/superfluid";
 import useAllo from "../hooks/allo";
-import { TransactionPanelState } from "./StreamingQuadraticFunding";
+import {
+  TransactionPanelState,
+  AllocationData,
+  MatchingData,
+} from "./StreamingQuadraticFunding";
 import { passportDecoderConfig } from "../lib/passportDecoderConfig";
 
-interface FundGranteeProps {
+export type FundGranteeProps = {
   setTransactionPanelState: React.Dispatch<
     React.SetStateAction<TransactionPanelState>
   >;
+  userAllocationData: AllocationData[];
+  directAllocationData: AllocationData[];
+  matchingData: MatchingData;
+  granteeIndex: number;
   name: string;
   image: string;
   website: string;
   social: string;
   description: JSX.Element;
-  granteeAddress: string;
+  granteeAddress: Address;
   recipientId: Address;
-}
+};
 
 export default function FundGrantee(props: FundGranteeProps) {
-  const { recipientId, granteeAddress, name, setTransactionPanelState } = props;
+  const {
+    recipientId,
+    granteeAddress,
+    name,
+    setTransactionPanelState,
+  } = props;
 
   const [flowRateToReceiver, setFlowRateToReceiver] = useState("");
   const [newFlowRate, setNewFlowRate] = useState("");
@@ -41,22 +53,15 @@ export default function FundGrantee(props: FundGranteeProps) {
   const { address } = useAccount();
   const { data: walletClient } = useWalletClient();
   const { alloStrategy } = useAllo();
-  const { createFlow, updateFlow } = useSuperfluid("ETHx", address);
   const { data: passportScore, refetch: refetchPassportScore } =
     useContractRead({
       abi: passportDecoderConfig.abi,
       address: passportDecoderConfig.addresses["84531"] as Address,
       functionName: "getScore",
       args: [address as Address],
-      //args: ["0xed6a062fBe2993bE323Af118F79E9B213c81F4f2" as Address],
       chainId: 84531,
       watch: false,
     });
-
-  const fundDirectly =
-    BigInt(flowRateToReceiver) !== BigInt(0)
-      ? () => updateFlow(address ?? "", granteeAddress, newFlowRate.toString())
-      : () => createFlow(address ?? "", granteeAddress, newFlowRate.toString());
 
   const fundWithAllo = async () => {
     if (!walletClient) {
@@ -108,11 +113,7 @@ export default function FundGrantee(props: FundGranteeProps) {
         gap={4}
         className="flex-grow-0 rounded-4 text-white pb-3"
       >
-        <RecipientDetails
-          flowRateToReceiver={flowRateToReceiver}
-          isMatchingPool={false}
-          {...props}
-        />
+        <RecipientDetails flowRateToReceiver={flowRateToReceiver} {...props} />
         <EditStream
           receiver={granteeAddress}
           granteeName={name}
@@ -126,8 +127,11 @@ export default function FundGrantee(props: FundGranteeProps) {
             refetchPassportScore({ throwOnError: false });
           }}
           transactionsToQueue={[
-            passportScore && passportScore > 3000 ? fundWithAllo : fundDirectly,
+            passportScore && passportScore > 30000
+              ? fundWithAllo
+              : fundWithAllo,
           ]}
+          {...props}
         />
       </Stack>
     </Stack>

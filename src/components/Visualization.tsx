@@ -20,8 +20,13 @@ import ethLight from "../assets/eth-light.svg";
 import ethDark from "../assets/eth-dark.svg";
 import usdcLight from "../assets/usdc-light.svg";
 import usdcDark from "../assets/usdc-dark.svg";
-import { TransactionPanelState, Grantee } from "./StreamingQuadraticFunding";
-import { weightedPick, getRandomNumberInRange } from "../lib/utils";
+import {
+  TransactionPanelState,
+  Grantee,
+  AllocationData,
+  MatchingData,
+} from "./StreamingQuadraticFunding";
+import { weightedPick, getRandomNumberInRange, sqrtBigInt } from "../lib/utils";
 import {
   MS_PER_SECOND,
   VIZ_ANIMATION_DURATION,
@@ -37,6 +42,9 @@ export interface VisualizationProps {
   poolYou: Grantee[];
   poolDirect: Grantee[];
   poolMatching: Grantee[];
+  userAllocationData: AllocationData[];
+  directAllocationData: AllocationData[];
+  matchingData: MatchingData;
 }
 
 export interface Dimensions {
@@ -102,6 +110,9 @@ export default function Visualization(props: VisualizationProps) {
     poolYou,
     poolDirect,
     poolMatching,
+    userAllocationData,
+    directAllocationData,
+    matchingData,
   } = props;
 
   const [datasetUsdc, setDatasetUsdc] = useState<Dataset[] | null>(null);
@@ -114,9 +125,6 @@ export default function Visualization(props: VisualizationProps) {
   const [timerStarted, setTimerStarted] = useState<number>();
   const [symbolsPerSecondUsdc, setSymbolsPerSecondUsdc] = useState(0);
   const [symbolsPerSecondEth, setSymbolsPerSecondEth] = useState(0);
-  const [totalYou, setTotalYou] = useState(0); // USDCx
-  const [totalDirect, setTotalDirect] = useState(0); // USDCx
-  const [totalMatching, setTotalMatching] = useState(0); // ETHx
 
   const svgRef = useRef<SVGSVGElement | null>(null);
   const symbolsGroup = useRef<any>();
@@ -196,54 +204,92 @@ export default function Visualization(props: VisualizationProps) {
     let _timerSymbolsEth: Timer | null = null;
     let _timerUpdateSymbols: Timer | null = null;
 
-    const totalYou = calcTotalFlowRate(poolYou);
-    const totalDirect = calcTotalFlowRate(poolDirect);
-    const totalMatching = calcTotalFlowRate(poolMatching);
-    const totalUsdc = totalYou + totalDirect;
+    const flowRateUserAllocation = calcTotalFlowRate(
+      userAllocationData.map((elem: AllocationData) => elem.flowRate)
+    );
+    const flowRateDirectAllocation =
+      calcTotalFlowRate(
+        directAllocationData.map((elem: AllocationData) => elem.flowRate)
+      ) - flowRateUserAllocation;
+    const flowRateMatching = calcTotalFlowRate([matchingData.flowRate]);
+
+    const totalUsdc = flowRateUserAllocation + flowRateDirectAllocation;
     const datasetUsdc: Dataset[] = [
       {
         token: Token.USDC,
         source: Source.YOU,
-        weight: totalYou / totalUsdc,
+        weight: flowRateUserAllocation / totalUsdc,
       },
       {
         token: Token.USDC,
         source: Source.DIRECT,
-        weight: totalDirect / totalUsdc,
+        weight: flowRateDirectAllocation / totalUsdc,
       },
     ];
-    /* TODO: calculate actual weights for matching pool based on amount of units held by the user */
     const datasetEth: Dataset[] = [
       {
         token: Token.ETH,
         source: Source.YOU,
-        weight: totalYou / totalUsdc,
+        weight: 0,
       },
       {
         token: Token.ETH,
         source: Source.MATCHING,
-        weight: totalDirect / totalUsdc,
+        weight: 0,
       },
     ];
 
-    for (const grantee of poolYou) {
+    for (const i in userAllocationData) {
       const weight =
-        Number(formatEther(BigInt(grantee.perSecondRate))) / totalYou;
+        Number(formatEther(BigInt(userAllocationData[i].flowRate))) /
+        flowRateUserAllocation;
 
-      datasetUsdc[0][grantee.name] = weight;
-      datasetEth[0][grantee.name] = weight;
+      datasetUsdc[0][poolYou[i].name] = weight;
     }
 
-    for (const grantee of poolDirect) {
+    for (const i in directAllocationData) {
       const weight =
-        Number(formatEther(BigInt(grantee.perSecondRate))) / totalDirect;
+        Number(
+          formatEther(
+            BigInt(directAllocationData[i].flowRate) -
+              BigInt(userAllocationData[i].flowRate)
+          )
+        ) / flowRateDirectAllocation;
 
-      datasetUsdc[1][grantee.name] = weight;
-      datasetEth[1][grantee.name] = weight;
+      datasetUsdc[1][poolDirect[i].name] = weight;
     }
+
+    let totalUserImpact = 0;
+
+    for (const i in matchingData.members) {
+      const userImpact = Number(
+        formatEther(
+          calcContributionImpactOnMatching(
+            BigInt(userAllocationData[i].flowRate),
+            BigInt(matchingData.flowRate),
+            BigInt(matchingData.members[i].units),
+            BigInt(matchingData.totalUnits)
+          )
+        )
+      );
+
+      const userWeight = userImpact / flowRateMatching;
+      const directWeight =
+        (Number(formatEther(BigInt(matchingData.members[i].flowRate))) -
+          userImpact) /
+        flowRateMatching;
+
+      datasetEth[0][poolYou[i].name] = userWeight;
+      datasetEth[1][poolDirect[i].name] = directWeight;
+      totalUserImpact += userImpact;
+    }
+
+    datasetEth[0].weight = totalUserImpact / flowRateMatching;
+    datasetEth[1].weight =
+      (flowRateMatching - totalUserImpact) / flowRateMatching;
 
     const symbolsPerSecondUsdc = amountToSymbolsPerSecond(totalUsdc);
-    const symbolsPerSecondEth = amountToSymbolsPerSecond(totalMatching);
+    const symbolsPerSecondEth = amountToSymbolsPerSecond(flowRateMatching);
 
     if (timerSymbolsUsdc && timerSymbolsEth && timerUpdateSymbols) {
       timerSymbolsUsdc.restart(
@@ -280,9 +326,6 @@ export default function Visualization(props: VisualizationProps) {
 
     setDatasetUsdc(datasetUsdc);
     setDatasetEth(datasetEth);
-    setTotalYou(totalYou);
-    setTotalDirect(totalDirect);
-    setTotalMatching(totalMatching);
     setSymbolsPerSecondUsdc(symbolsPerSecondUsdc);
     setSymbolsPerSecondEth(symbolsPerSecondEth);
 
@@ -299,7 +342,15 @@ export default function Visualization(props: VisualizationProps) {
         _timerUpdateSymbols.stop();
       }
     };
-  }, [poolYou, poolDirect, poolMatching, transactionPanelState.show]);
+  }, [
+    poolYou,
+    poolDirect,
+    poolMatching,
+    directAllocationData,
+    userAllocationData,
+    matchingData,
+    transactionPanelState.show,
+  ]);
 
   const generateSymbol = (
     elapsed: number,
@@ -434,12 +485,34 @@ export default function Visualization(props: VisualizationProps) {
   const findStartRange = (amount: number) =>
     Math.pow(10, Math.floor(Math.log10(amount)));
 
-  const calcTotalFlowRate = (pool: Grantee[]) =>
-    pool.reduce(
-      (acc: number, grantee: Grantee) =>
-        acc + Number(formatEther(BigInt(grantee.perSecondRate))),
+  const calcTotalFlowRate = (flowRates: `${number}`[]) =>
+    flowRates.reduce(
+      (acc: number, flowRate: string) =>
+        acc + Number(formatEther(BigInt(flowRate))),
       0
     );
+
+  const calcContributionImpactOnMatching = (
+    contributionFlowRate: bigint,
+    poolFlowRate: bigint,
+    granteeUnits: bigint,
+    totalUnits: bigint
+  ) => {
+    if (contributionFlowRate === BigInt(0)) {
+      return BigInt(0);
+    }
+
+    const granteeUnitsWithoutContribution =
+      (sqrtBigInt(granteeUnits * BigInt(1000)) -
+        sqrtBigInt(contributionFlowRate)) **
+        BigInt(2) /
+      BigInt(1000);
+    const userUnits = granteeUnits - granteeUnitsWithoutContribution;
+    const contributionImpactOnMatching =
+      (userUnits * poolFlowRate) / totalUnits;
+
+    return contributionImpactOnMatching;
+  };
 
   return (
     <>
@@ -447,11 +520,8 @@ export default function Visualization(props: VisualizationProps) {
         <FundingSources
           dimensions={dimensions}
           startYScale={startYScale}
-          symbolsPerSecondUsdc={symbolsPerSecondUsdc}
-          symbolsPerSecondEth={symbolsPerSecondEth}
-          totalYou={totalYou}
-          totalDirect={totalDirect}
-          totalMatching={totalMatching}
+          symbolsPerSecondAllocation={symbolsPerSecondUsdc}
+          symbolsPerSecondMatching={symbolsPerSecondEth}
           {...props}
         />
         <svg width={dimensions.width} height={dimensions.height} ref={svgRef} />
@@ -459,11 +529,6 @@ export default function Visualization(props: VisualizationProps) {
           <Grantees
             dimensions={dimensions}
             endYScale={endYScale}
-            totalYou={totalYou}
-            totalDirect={totalDirect}
-            totalMatching={totalMatching}
-            datasetUsdc={datasetUsdc}
-            datasetEth={datasetEth}
             grantees={grantees}
             descriptions={poolDirect.map((elem) => elem.description ?? "")}
             {...props}

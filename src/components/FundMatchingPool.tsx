@@ -4,9 +4,8 @@ import Stack from "react-bootstrap/Stack";
 import Card from "react-bootstrap/Card";
 import Button from "react-bootstrap/Button";
 import Image from "react-bootstrap/Image";
-import RecipientDetails from "./RecipientDetails";
+import MatchingPoolDetails from "./MatchingPoolDetails";
 import EditStream from "./EditStream";
-import SQFIcon from "../assets/sqf.png";
 import CloseIcon from "../assets/close.svg";
 import useSuperfluid from "../hooks/superfluid";
 import { TransactionPanelState } from "./StreamingQuadraticFunding";
@@ -57,40 +56,20 @@ export default function FundMatchingPool(props: FundMatchingPoolProps) {
         gap={4}
         className="rounded-4 text-white pb-3 flex-grow-0"
       >
-        <RecipientDetails
-          name="Matching Stream"
-          image={SQFIcon}
-          website="https://geoweb.network"
-          social="https://twitter.com/thegeoweb"
+        <MatchingPoolDetails
           flowRateToReceiver={flowRateToReceiver}
-          isMatchingPool={true}
-          description={
-            <>
-              100% of Geo Web PCO land market revenue is allocated through
-              streaming quadratic funding. You can help fund more public goods
-              by opening a direct stream to the matching pool OR by claiming a
-              parcel at{" "}
-              <Card.Link
-                href="https://geoweb.land"
-                target="_blank"
-                rel="noreferrer"
-                className="text-decoration-none"
-              >
-                https://geoweb.land
-              </Card.Link>
-            </>
-          }
           {...props}
         />
         <EditStream
           granteeName="GDA Matching Pool"
           receiver={MATCHING_POOL_ADDRESS}
           flowRateToReceiver={flowRateToReceiver}
+          granteeIndex={null}
           setFlowRateToReceiver={setFlowRateToReceiver}
           newFlowRate={newFlowRate}
           setNewFlowRate={setNewFlowRate}
           isFundingMatchingPool={true}
-          transactionsToQueue={[async () => gdaDistributeFlow(newFlowRate)]}
+          transactionsToQueue={[async () => await gdaDistributeFlow(newFlowRate)]}
         />
       </Stack>
     </Stack>

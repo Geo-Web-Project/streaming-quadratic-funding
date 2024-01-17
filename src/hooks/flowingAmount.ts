@@ -2,15 +2,17 @@ import { useState, useEffect } from "react";
 
 const ANIMATION_MINIMUM_STEP_TIME = 100;
 
-export default function useSuperTokenBalance(
-  startingBalance: bigint,
+export default function useFlowingAmount(
+  startingAmount: bigint,
   startingTimestamp: number,
   flowRate: bigint
 ) {
-  const [superTokenBalance, setSuperTokenBalance] = useState(startingBalance);
+  const [flowingAmount, setFlowingAmount] = useState(startingAmount);
 
   useEffect(() => {
     if (flowRate === BigInt(0)) {
+      setFlowingAmount(startingAmount);
+
       return;
     }
 
@@ -28,18 +30,18 @@ export default function useSuperTokenBalance(
         const elapsedTimeInMilliseconds = BigInt(
           Date.now() - startingTimestamp * 1000
         );
-        const superTokenBalance =
-          startingBalance +
+        const flowingAmount =
+          startingAmount +
           (flowRate * elapsedTimeInMilliseconds) / BigInt(1000);
 
-        setSuperTokenBalance(superTokenBalance);
+        setFlowingAmount(flowingAmount);
       }
     };
 
     let animationFrameId = window.requestAnimationFrame(animationStep);
 
     return () => window.cancelAnimationFrame(animationFrameId);
-  }, [startingBalance, startingTimestamp, flowRate]);
+  }, [startingAmount, startingTimestamp, flowRate]);
 
-  return superTokenBalance;
+  return flowingAmount;
 }

@@ -1,3 +1,4 @@
+import { formatEther } from "viem";
 import Stack from "react-bootstrap/Stack";
 import Card from "react-bootstrap/Card";
 import Button from "react-bootstrap/Button";
@@ -5,18 +6,20 @@ import Image from "react-bootstrap/Image";
 import Badge from "react-bootstrap/Badge";
 import HandIcon from "../assets/hand.svg";
 import { Dimensions } from "./Visualization";
-import { TransactionPanelState } from "./StreamingQuadraticFunding";
-import { perSecondToPerMonth } from "../lib/utils";
+import {
+  TransactionPanelState,
+  AllocationData,
+  MatchingData,
+} from "./StreamingQuadraticFunding";
+import { clampText, perSecondToPerMonth } from "../lib/utils";
 import { VIZ_CARD_WIDTH_GRANTEE } from "../lib/constants";
 
 interface GranteesProps {
   dimensions: Dimensions;
   endYScale: (n: number) => number;
-  totalYou: number;
-  totalDirect: number;
-  totalMatching: number;
-  datasetUsdc: any;
-  datasetEth: any;
+  userAllocationData: AllocationData[];
+  directAllocationData: AllocationData[];
+  matchingData: MatchingData;
   grantees: string[];
   descriptions: string[];
   setTransactionPanelState: React.Dispatch<
@@ -28,11 +31,9 @@ export default function Grantees(props: GranteesProps) {
   const {
     dimensions,
     endYScale,
-    totalYou,
-    totalDirect,
-    totalMatching,
-    datasetUsdc,
-    datasetEth,
+    userAllocationData,
+    directAllocationData,
+    matchingData,
     grantees,
     descriptions,
     setTransactionPanelState,
@@ -70,13 +71,13 @@ export default function Grantees(props: GranteesProps) {
           >
             <Image src={HandIcon} alt="donate" width={26} />
           </Button>
-          <Card className="h-100 px-1 bg-transparent text-white">
+          <Card className="h-100 px-1 bg-transparent text-white border-0">
             <Card.Title className="m-0 mb-1 p-0 fs-4">{grantee}</Card.Title>
             <Card.Subtitle
               as="p"
               className="d-block h-50 p-0 m-0 fs-5 text-info text-wrap text-break text-truncate lh-md"
             >
-              {descriptions[i]}
+              {clampText(descriptions[i], 72)}
             </Card.Subtitle>
             <Stack
               direction="horizontal"
@@ -84,25 +85,40 @@ export default function Grantees(props: GranteesProps) {
               className="align-items-center fs-6 m-0 p-0"
             >
               <Badge className="bg-aqua w-33 rounded-1 fs-6 text-start fw-normal">
-                {parseFloat(
-                  perSecondToPerMonth(
-                    totalYou * datasetUsdc[0][grantee]
-                  ).toFixed(2)
-                )}{" "}
+                {BigInt(userAllocationData[i].flowRate) > 0
+                  ? parseFloat(
+                      perSecondToPerMonth(
+                        Number(
+                          formatEther(BigInt(userAllocationData[i].flowRate))
+                        )
+                      ).toFixed(2)
+                    )
+                  : 0}{" "}
               </Badge>
               <Badge className="bg-secondary w-33 rounded-1 px-1 fs-6 text-start fw-normal">
-                {parseFloat(
-                  perSecondToPerMonth(
-                    totalDirect * datasetUsdc[1][grantee]
-                  ).toFixed(2)
-                )}{" "}
+                {BigInt(directAllocationData[i].flowRate) > 0
+                  ? parseFloat(
+                      perSecondToPerMonth(
+                        Number(
+                          formatEther(
+                            BigInt(directAllocationData[i].flowRate) -
+                              BigInt(userAllocationData[i].flowRate)
+                          )
+                        )
+                      ).toFixed(2)
+                    )
+                  : 0}{" "}
               </Badge>
               <Badge className="bg-slate w-33 rounded-1 px-1 fs-6 text-start fw-normal">
-                {parseFloat(
-                  perSecondToPerMonth(
-                    totalMatching * datasetEth[1][grantee]
-                  ).toFixed(2)
-                )}{" "}
+                {BigInt(matchingData.members[i].flowRate) > 0
+                  ? parseFloat(
+                      perSecondToPerMonth(
+                        Number(
+                          formatEther(BigInt(matchingData.members[i].flowRate))
+                        )
+                      ).toFixed(8)
+                    )
+                  : 0}{" "}
               </Badge>
               /month
             </Stack>

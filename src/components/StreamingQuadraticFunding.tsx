@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAccount } from "wagmi";
 import Container from "react-bootstrap/Container";
 import Stack from "react-bootstrap/Stack";
 import Row from "react-bootstrap/Row";
@@ -9,10 +10,32 @@ import Visualization from "./Visualization";
 import FundGrantee from "./FundGrantee";
 import SQFIcon from "../assets/sqf.png";
 import useAllo from "../hooks/allo";
+import useRoundQuery from "../hooks/roundQuery";
 import { recipientIds } from "../lib/recipientIds";
+import { clampText } from "../lib/utils";
 import poolYou from "../lib/pool-you.json";
 import poolDirect from "../lib/pool-direct.json";
 import poolMatching from "../lib/pool-matching.json";
+
+export type AllocationData = {
+  flowRate: `${number}`;
+  streamedUntilUpdatedAt: `${number}`;
+  updatedAtTimestamp: number;
+};
+
+export type MatchingData = {
+  totalUnits: `${number}`;
+  flowRate: `${number}`;
+  totalAmountFlowedDistributedUntilUpdatedAt: `${number}`;
+  updatedAtTimestamp: number;
+  members: Member[];
+};
+
+export type Member = {
+  flowRate: `${number}`;
+  units: `${number}`;
+  totalAmountClaimed: `${number}`;
+};
 
 export interface TransactionPanelState {
   show: boolean;
@@ -24,7 +47,6 @@ export interface Grantee {
   name: string;
   description?: string;
   address?: string;
-  perSecondRate: string;
 }
 
 export default function StreamingQuadraticFunding() {
@@ -35,9 +57,17 @@ export default function StreamingQuadraticFunding() {
       isMatchingPool: false,
     });
 
+  const { address } = useAccount();
   const { recipients } = useAllo();
+  const { userAllocationData, directAllocationData, matchingData } =
+    useRoundQuery(address);
 
-  if (!recipients) {
+  if (
+    !recipients ||
+    !userAllocationData ||
+    !directAllocationData ||
+    !matchingData
+  ) {
     return (
       <Spinner
         animation="border"
@@ -75,12 +105,19 @@ export default function StreamingQuadraticFunding() {
             poolYou={poolYou}
             poolDirect={poolDirect}
             poolMatching={poolMatching}
+            userAllocationData={userAllocationData}
+            directAllocationData={directAllocationData}
+            matchingData={matchingData}
           />
         </Col>
         {transactionPanelState.show &&
           transactionPanelState.granteeIndex !== null && (
             <Col xs="3" className="p-0">
               <FundGrantee
+                userAllocationData={userAllocationData}
+                directAllocationData={directAllocationData}
+                matchingData={matchingData}
+                granteeIndex={transactionPanelState.granteeIndex}
                 setTransactionPanelState={setTransactionPanelState}
                 name={poolDirect[transactionPanelState.granteeIndex].name}
                 image={SQFIcon}
@@ -92,7 +129,11 @@ export default function StreamingQuadraticFunding() {
                 }
                 description={
                   <>
-                    {poolDirect[transactionPanelState.granteeIndex].description}
+                    {clampText(
+                      poolDirect[transactionPanelState.granteeIndex]
+                        .description,
+                      280
+                    )}
                   </>
                 }
               />

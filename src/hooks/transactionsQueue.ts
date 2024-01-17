@@ -15,6 +15,9 @@ export default function useTransactionsQueue() {
 
         setCompletedTransactions((prev) => prev + 1);
       }
+
+      setAreTransactionsLoading(false);
+      setCompletedTransactions(0);
     } catch (err: any) {
       let errorMessage = "An error occured executing the transaction";
 
@@ -23,13 +26,11 @@ export default function useTransactionsQueue() {
       }
 
       setTransactionError(errorMessage);
+      setCompletedTransactions(0);
       setAreTransactionsLoading(false);
 
       throw Error(err);
     }
-
-    setCompletedTransactions(0);
-    setAreTransactionsLoading(false);
   };
 
   return {

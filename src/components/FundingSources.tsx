@@ -1,3 +1,4 @@
+import { formatEther } from "viem";
 import Stack from "react-bootstrap/Stack";
 import Card from "react-bootstrap/Card";
 import Badge from "react-bootstrap/Badge";
@@ -7,37 +8,81 @@ import usdcWhite from "../assets/usdc-white.svg";
 import ethWhite from "../assets/eth-white.svg";
 import hand from "../assets/hand.svg";
 import { VisualizationProps, Dimensions } from "./Visualization";
+import useFlowingAmount from "../hooks/flowingAmount";
 import { perSecondToPerMonth } from "../lib/utils";
 import { VIZ_CARD_WIDTH_SOURCE } from "../lib/constants";
 
 type FundingSourcesProps = VisualizationProps & {
   dimensions: Dimensions;
   startYScale: (n: number) => number;
-  symbolsPerSecondUsdc: number;
-  symbolsPerSecondEth: number;
-  totalYou: number;
-  totalDirect: number;
-  totalMatching: number;
+  symbolsPerSecondAllocation: number;
+  symbolsPerSecondMatching: number;
 };
 
 export default function FundingSources(props: FundingSourcesProps) {
   const {
     dimensions,
     startYScale,
-    symbolsPerSecondUsdc,
-    symbolsPerSecondEth,
-    totalYou,
-    totalDirect,
-    totalMatching,
+    symbolsPerSecondAllocation,
+    symbolsPerSecondMatching,
+    userAllocationData,
+    directAllocationData,
+    matchingData,
     setTransactionPanelState,
   } = props;
 
-  const totalUsdc = totalYou + totalDirect;
-  const symbolsPerSecondToUsdc = (symbolsPerSecond: number) =>
-    totalUsdc / symbolsPerSecond;
+  const average = (array: bigint[]) => {
+    const length = array.filter((n) => n !== BigInt(0)).length;
 
-  const symbolsPerSecondToEth = (symbolsPerSecond: number) =>
-    totalMatching / symbolsPerSecond;
+    if (length === 0) {
+      return BigInt(0);
+    }
+
+    return array.reduce((a, b) => a + b) / BigInt(length);
+  };
+  const cumSum = (array: bigint[]) => array.reduce((a, b) => a + b);
+  const totalFlowRateUser = cumSum(
+    userAllocationData.map((elem) => BigInt(elem.flowRate))
+  );
+  const totalFlowRateDirect =
+    cumSum(directAllocationData.map((elem) => BigInt(elem.flowRate))) -
+    totalFlowRateUser;
+  const totalStreamedUntilUpdatedUser = cumSum(
+    userAllocationData.map((elem) => BigInt(elem.streamedUntilUpdatedAt))
+  );
+  const totalStreamedUntilUpdatedDirect =
+    cumSum(
+      directAllocationData.map((elem) => BigInt(elem.streamedUntilUpdatedAt))
+    ) - totalStreamedUntilUpdatedUser;
+  const totalStreamedUserAllocation = useFlowingAmount(
+    totalStreamedUntilUpdatedUser,
+    Number(
+      average(userAllocationData.map((elem) => BigInt(elem.updatedAtTimestamp)))
+    ),
+    totalFlowRateUser
+  );
+  const totalStreamedDirectAllocation = useFlowingAmount(
+    totalStreamedUntilUpdatedDirect,
+    Number(
+      average(
+        directAllocationData.map((elem) => BigInt(elem.updatedAtTimestamp))
+      )
+    ),
+    totalFlowRateDirect
+  );
+  const totalStreamedMatching = useFlowingAmount(
+    BigInt(matchingData.totalAmountFlowedDistributedUntilUpdatedAt),
+    matchingData.updatedAtTimestamp,
+    BigInt(matchingData.flowRate)
+  );
+  const totalFlowRateAllocated =
+    Number(formatEther(totalFlowRateUser)) +
+    Number(formatEther(totalFlowRateDirect));
+  const totalFlowRateMatching = Number(
+    formatEther(BigInt(matchingData.flowRate))
+  );
+  const calcSymbolValue = (amount: number, symbolsPerSecond: number) =>
+    amount / symbolsPerSecond;
 
   return (
     <Stack
@@ -62,7 +107,11 @@ export default function FundingSources(props: FundingSourcesProps) {
                 background: "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
               }}
             >
-              {parseFloat(perSecondToPerMonth(totalYou).toFixed(2))}
+              {parseFloat(
+                perSecondToPerMonth(
+                  Number(formatEther(totalFlowRateUser))
+                ).toFixed(2)
+              )}
             </Badge>
             <Card.Text className="w-25 m-0">/month</Card.Text>
           </Stack>
@@ -74,7 +123,7 @@ export default function FundingSources(props: FundingSourcesProps) {
                 background: "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
               }}
             >
-              {parseFloat((perSecondToPerMonth(totalYou) * 12).toFixed(2))}{" "}
+              {formatEther(totalStreamedUserAllocation)}
             </Badge>
             <Card.Text className="w-25 m-0"> total</Card.Text>
           </Stack>
@@ -98,7 +147,11 @@ export default function FundingSources(props: FundingSourcesProps) {
                 background: "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
               }}
             >
-              {parseFloat(perSecondToPerMonth(totalDirect).toFixed(2))}
+              {parseFloat(
+                perSecondToPerMonth(
+                  Number(formatEther(totalFlowRateDirect))
+                ).toFixed(2)
+              )}
             </Badge>
             <Card.Text className="w-25 m-0">/month</Card.Text>
           </Stack>
@@ -110,7 +163,7 @@ export default function FundingSources(props: FundingSourcesProps) {
                 background: "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
               }}
             >
-              {parseFloat((perSecondToPerMonth(totalDirect) * 12).toFixed(2))}{" "}
+              {formatEther(totalStreamedDirectAllocation)}{" "}
             </Badge>
             <Card.Text className="w-25 m-0"> total</Card.Text>
           </Stack>
@@ -156,7 +209,9 @@ export default function FundingSources(props: FundingSourcesProps) {
                       "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
                   }}
                 >
-                  {parseFloat(perSecondToPerMonth(totalMatching).toFixed(2))}
+                  {parseFloat(
+                    perSecondToPerMonth(totalFlowRateMatching).toFixed(2)
+                  )}
                 </Badge>
                 <Card.Text className="w-25 m-0">/month</Card.Text>
               </Stack>
@@ -173,9 +228,7 @@ export default function FundingSources(props: FundingSourcesProps) {
                       "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
                   }}
                 >
-                  {parseFloat(
-                    (perSecondToPerMonth(totalMatching) * 12).toFixed(2)
-                  )}{" "}
+                  {formatEther(totalStreamedMatching).slice(0, 15)}
                 </Badge>
                 <Card.Text className="w-25 m-0">total</Card.Text>
               </Stack>
@@ -199,9 +252,9 @@ export default function FundingSources(props: FundingSourcesProps) {
           />
           <Card.Text className="mb-0 me-3">
             ={" "}
-            {parseFloat(
-              symbolsPerSecondToUsdc(symbolsPerSecondUsdc).toFixed(8)
-            )}{" "}
+            {calcSymbolValue(totalFlowRateAllocated, symbolsPerSecondAllocation)
+              .toFixed(8)
+              .replace(/\.?0+$/, "")}{" "}
             USDCx
           </Card.Text>
           <Card.Img
@@ -212,7 +265,7 @@ export default function FundingSources(props: FundingSourcesProps) {
           />
           <Card.Text className="mb-0">
             ={" "}
-            {symbolsPerSecondToEth(symbolsPerSecondEth)
+            {calcSymbolValue(totalFlowRateMatching, symbolsPerSecondMatching)
               .toFixed(11)
               .replace(/\.?0+$/, "")}{" "}
             ETHx

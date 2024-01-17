@@ -1,15 +1,18 @@
 import { useEffect, useState, createContext, useContext } from "react";
+import { Address } from "viem";
 import { useNetwork, usePublicClient } from "wagmi";
 import { optimismGoerli } from "wagmi/chains";
 import { SQFSuperFluidStrategy } from "@allo-team/allo-v2-sdk/";
 import { recipientIds } from "../lib/recipientIds";
+import { sqfStrategyAbi } from "../lib/abi/sqfStrategy";
 import { SQF_STRATEGY_ADDRESS, ALLO_POOL_ID } from "../lib/constants";
 
 export type Recipient = {
   useRegistryAnchor: boolean;
-  recipientAddress: string;
+  recipientAddress: Address;
   requestedAmount: string;
-  superApp: string;
+  superApp: Address;
+  id: string;
   recipientStatus: Status;
   metadata: Metadata;
 };
@@ -63,15 +66,24 @@ export function AlloContextProvider({
 
   useEffect(() => {
     (async () => {
-      const recipients = [];
+      const res = await publicClient.multicall({
+        contracts: recipientIds.map((recipientId) => {
+          return {
+            address: SQF_STRATEGY_ADDRESS,
+            abi: sqfStrategyAbi,
+            functionName: "getRecipient",
+            args: [recipientId],
+          };
+        }),
+      });
 
-      for (const recipientId of recipientIds) {
-        const recipient = await alloStrategy.getRecipient(recipientId);
+      if (res.every((elem) => elem.status === "success")) {
+        const recipients = res.map((elem) => elem.result);
 
-        recipients.push(recipient as Recipient);
+        setRecipients(recipients as Recipient[]);
+      } else {
+        throw Error("Recipients not found");
       }
-
-      setRecipients(recipients);
     })();
   }, []);
 

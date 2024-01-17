@@ -119,6 +119,20 @@ export default function useSuperfluid(
     return flow;
   };
 
+  const getAllowance = async (owner: string, spender: string) => {
+    if (!superToken) {
+      throw Error("Super Token was not initialized");
+    }
+
+    const allowance = superToken.allowance({
+      owner,
+      spender,
+      providerOrSigner: provider,
+    });
+
+    return allowance;
+  };
+
   const wrap = async (amount: bigint) => {
     if (!superToken) {
       throw Error("Super Token was not initialized");
@@ -251,6 +265,7 @@ export default function useSuperfluid(
     updatePermissions,
     gdaDistributeFlow,
     getFlow,
+    getAllowance,
     wrap,
     createFlow,
     updateFlow,

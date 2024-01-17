@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAccount, useNetwork, useBalance } from "wagmi";
 import { formatEther, parseEther, formatUnits } from "viem";
 import dayjs from "dayjs";
@@ -23,13 +23,15 @@ import ETHLogo from "../assets/eth-white.svg";
 import USDCLogo from "../assets/usdc-white.svg";
 import DoneIcon from "../assets/done.svg";
 import XIcon from "../assets/x-logo.svg";
+import LensIcon from "../assets/lens.svg";
 import FarcasterIcon from "../assets/farcaster.svg";
 import PassportIcon from "../assets/passport.svg";
 import ArrowDownIcon from "../assets/arrow-down.svg";
 import ArrowForwardIcon from "../assets/arrow-forward.svg";
 import CopyIcon from "../assets/copy-light.svg";
 import ReloadIcon from "../assets/reload.svg";
-import useSuperTokenBalance from "../hooks/superTokenBalance";
+import { MatchingData } from "../components/StreamingQuadraticFunding";
+import useFlowingAmount from "../hooks/flowingAmount";
 import useSuperfluid from "../hooks/superfluid";
 import useTransactionsQueue from "../hooks/transactionsQueue";
 import {
@@ -40,6 +42,7 @@ import {
   truncateStr,
   roundWeiAmount,
   convertStreamValueToInterval,
+  sqrtBigInt,
 } from "../lib/utils";
 import {
   USDC_ADDRESS,
@@ -49,6 +52,8 @@ import {
 
 interface EditStreamProps {
   granteeName: string;
+  granteeIndex: number | null;
+  matchingData?: MatchingData;
   receiver: string;
   flowRateToReceiver: string;
   setFlowRateToReceiver: React.Dispatch<React.SetStateAction<string>>;
@@ -74,6 +79,8 @@ dayjs.extend(duration);
 export default function EditStream(props: EditStreamProps) {
   const {
     granteeName,
+    granteeIndex,
+    matchingData,
     flowRateToReceiver,
     setFlowRateToReceiver,
     newFlowRate,
@@ -105,7 +112,7 @@ export default function EditStream(props: EditStreamProps) {
     wrap,
     underlyingTokenApprove,
   } = useSuperfluid(isFundingMatchingPool ? "ETHx" : USDCX_ADDRESS, address);
-  const superTokenBalance = useSuperTokenBalance(
+  const superTokenBalance = useFlowingAmount(
     BigInt(startingSuperTokenBalance.availableBalance ?? 0),
     startingSuperTokenBalance.timestamp ?? 0,
     BigInt(accountFlowRate)
@@ -140,6 +147,33 @@ export default function EditStream(props: EditStreamProps) {
   useEffect(() => {
     updateFlowRateToReceiver();
   }, [address, superToken, receiver]);
+
+  const netImpact = useMemo(() => {
+    if (
+      granteeIndex === null ||
+      !matchingData ||
+      !flowRateToReceiver ||
+      !newFlowRate
+    ) {
+      return BigInt(0);
+    }
+
+    const granteeUnits = BigInt(matchingData.members[granteeIndex].units);
+    const granteeFlowRate = BigInt(matchingData.members[granteeIndex].flowRate);
+    const newGranteeUnits =
+      (sqrtBigInt(granteeUnits * BigInt(1000)) -
+        sqrtBigInt(BigInt(flowRateToReceiver)) +
+        sqrtBigInt(BigInt(newFlowRate))) **
+        BigInt(2) /
+      BigInt(1000);
+    const unitsDelta = newGranteeUnits - granteeUnits;
+    const newPoolUnits = unitsDelta + BigInt(matchingData.totalUnits);
+    const newGranteeFlowRate =
+      (newGranteeUnits * BigInt(matchingData.flowRate)) / newPoolUnits;
+    const netImpact = newGranteeFlowRate - granteeFlowRate;
+
+    return netImpact;
+  }, [newFlowRate, flowRateToReceiver, matchingData]);
 
   useEffect(() => {
     if (amountPerTimeInterval) {
@@ -181,19 +215,20 @@ export default function EditStream(props: EditStreamProps) {
         wrapAmountWei > BigInt(underlyingTokenAllowance)
       ) {
         transactions.push(async () => {
-          underlyingTokenApprove(wrapAmountWei.toString());
+          await underlyingTokenApprove(wrapAmountWei.toString());
         });
       }
 
-      transactions.push(async () => wrap(wrapAmountWei));
+      transactions.push(async () => await wrap(wrapAmountWei));
     }
 
     if (!isFundingMatchingPool) {
-      transactions.push(async () =>
-        updatePermissions(
-          SQF_STRATEGY_ADDRESS,
-          (BigInt(-accountFlowRate) + BigInt(newFlowRate)).toString()
-        )
+      transactions.push(
+        async () =>
+          await updatePermissions(
+            SQF_STRATEGY_ADDRESS,
+            BigInt(newFlowRate).toString()
+          )
       );
     }
 
@@ -505,7 +540,12 @@ export default function EditStream(props: EditStreamProps) {
                   className="w-50 py-1 rounded-3 text-white"
                   onClick={() => {
                     setWrapAmount("");
-                    setStep(Step.REVIEW);
+                    setStep(
+                      isFundingMatchingPool ||
+                        (passportScore && passportScore >= minPassportScore)
+                        ? Step.REVIEW
+                        : Step.MINT_PASSPORT
+                    );
                   }}
                 >
                   Skip
@@ -572,7 +612,10 @@ export default function EditStream(props: EditStreamProps) {
             </Badge>
             {Step.MINT_PASSPORT}
           </Button>
-          <Accordion.Collapse eventKey={Step.MINT_PASSPORT} className="p-3 py-0">
+          <Accordion.Collapse
+            eventKey={Step.MINT_PASSPORT}
+            className="p-3 py-0"
+          >
             <Stack direction="vertical" gap={2}>
               <Card.Text className="m-0 border-bottom border-secondary text-secondary">
                 Current Score
@@ -778,26 +821,63 @@ export default function EditStream(props: EditStreamProps) {
                 />
               </Badge>
             </Stack>
-            <Stack
-              direction="horizontal"
-              className="mt-2 bg-purple rounded-4 p-2"
-            >
-              <Card.Text className="w-33 m-0">New Stream</Card.Text>
-              <Stack direction="horizontal" gap={1} className="w-50 ms-1 p-2">
-                <Image
-                  src={superTokenIcon}
-                  alt="eth"
-                  width={isFundingMatchingPool ? 16 : 32}
-                />
-                <Badge className="bg-aqua w-100 ps-2 pe-2 py-2 fs-4 text-start">
-                  {convertStreamValueToInterval(
-                    parseEther(amountPerTimeInterval),
-                    timeInterval,
-                    TimeInterval.MONTH
-                  )}
-                </Badge>
+            <Stack direction="vertical">
+              <Stack
+                direction="horizontal"
+                className={`mt-2 bg-purple p-2 ${
+                  !isFundingMatchingPool ? "rounded-top-4" : "rounded-4"
+                }`}
+              >
+                <Card.Text className="w-33 m-0">New Stream</Card.Text>
+                <Stack direction="horizontal" gap={1} className="w-50 ms-1 p-2">
+                  <Image
+                    src={superTokenIcon}
+                    alt={isFundingMatchingPool ? "eth" : "usdc"}
+                    width={isFundingMatchingPool ? 16 : 32}
+                  />
+                  <Badge className="bg-aqua w-100 ps-2 pe-2 py-2 fs-4 text-start">
+                    {convertStreamValueToInterval(
+                      parseEther(amountPerTimeInterval),
+                      timeInterval,
+                      TimeInterval.MONTH
+                    )}
+                  </Badge>
+                </Stack>
+                <Card.Text className="m-0 ms-1 fs-5">/month</Card.Text>
               </Stack>
-              <Card.Text className="m-0 ms-1 fs-5">/month</Card.Text>
+              {!isFundingMatchingPool && (
+                <Stack
+                  direction="horizontal"
+                  className="bg-purple rounded-bottom-4 border-top border-dark p-2"
+                >
+                  <Card.Text className="w-33 m-0">Matching</Card.Text>
+                  <Stack
+                    direction="horizontal"
+                    gap={1}
+                    className="w-50 ms-1 p-2"
+                  >
+                    <Image
+                      src={ETHLogo}
+                      alt="eth"
+                      width={18}
+                      className="mx-1"
+                    />
+                    <Badge className="bg-slate w-100 ps-2 pe-2 py-2 fs-4 text-start">
+                      {passportScore && passportScore < minPassportScore
+                        ? "N/A"
+                        : netImpact
+                        ? `${netImpact > 0 ? "+" : ""}${parseFloat(
+                            (
+                              Number(formatEther(netImpact)) *
+                              fromTimeUnitsToSeconds(1, "months")
+                            ).toFixed(6)
+                          )}`
+                        : 0}
+                    </Badge>
+                  </Stack>
+                  <Card.Text className="m-0 ms-1 fs-5">/month</Card.Text>
+                </Stack>
+              )}
             </Stack>
             {accountFlowRate &&
               BigInt(-accountFlowRate) -
@@ -899,8 +979,7 @@ export default function EditStream(props: EditStreamProps) {
           </Card.Text>
           <Stack
             direction="horizontal"
-            gap={2}
-            className="justify-content-center"
+            className="justify-content-center align-items-end"
           >
             <Card.Link
               className="d-flex flex-column twitter-share-button text-decoration-none text-white fs-5 p-2"
@@ -909,7 +988,7 @@ export default function EditStream(props: EditStreamProps) {
               href={`https://twitter.com/intent/tweet?text=I%20just%20opened%20a%20contribution%20stream%20to%20${granteeName}%20in%20the%20%23streamingquadratic%20funding%20pilot%20presented%20by%20%40thegeoweb%2C%20%40Superfluid_HQ%2C%20%26%20%40gitcoin%3A%0A%0Ahttps%3A%2F%2Fgeoweb.land%2Fgovernance%2F%0A%0AJoin%20me%20in%20making%20public%20goods%20funding%20history%20by%20donating%20in%20the%20world%27s%20first%20SQF%20round%21`}
               data-size="large"
             >
-              <Image src={XIcon} alt="x social" width={32} className="m-auto" />
+              <Image src={XIcon} alt="x social" width={24} className="m-auto" />
               Post to X
             </Card.Link>
             <Card.Link
@@ -921,10 +1000,19 @@ export default function EditStream(props: EditStreamProps) {
               <Image
                 src={FarcasterIcon}
                 alt="farcaster"
-                width={32}
+                width={28}
                 className="m-auto"
               />
               Cast to Farcaster
+            </Card.Link>
+            <Card.Link
+              className="d-flex flex-column text-decoration-none text-white fs-5 p-2"
+              rel="noreferrer"
+              target="_blank"
+              href={`https://hey.xyz/?text=I+just+opened+a+contribution+stream+to+GRANTEE+in+the+%23streamingquadraticfunding+pilot+round+presented+by+%40geoweb%2C+%40gitcoin%2C+%26+%40superfluid%3A+%0A%0Ahttps%3A%2F%2Fgeoweb.land%2Fgovernance%2F+%0A%0AJoin+me+in+making+public+goods+funding+history+by+donating+in+the+world%27s+first+SQF+round%21`}
+            >
+              <Image src={LensIcon} alt="lens" width={32} className="m-auto" />
+              Post on Lens
             </Card.Link>
           </Stack>
         </Card>

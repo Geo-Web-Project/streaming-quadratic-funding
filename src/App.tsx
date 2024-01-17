@@ -6,6 +6,7 @@ import {
 import { configureChains, createConfig, WagmiConfig } from "wagmi";
 import { optimismGoerli, baseGoerli } from "wagmi/chains";
 import { alchemyProvider } from "wagmi/providers/alchemy";
+import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client";
 import Layout from "./components/Layout";
 import StreamingQuadraticFunding from "./components/StreamingQuadraticFunding";
 import { AlloContextProvider } from "./context/Allo";
@@ -29,6 +30,12 @@ const wagmiConfig = createConfig({
   publicClient,
 });
 
+const apolloClient = new ApolloClient({
+  uri: "https://api.thegraph.com/subgraphs/name/superfluid-finance/protocol-v1-optimism-goerli",
+
+  cache: new InMemoryCache(),
+});
+
 function App() {
   return (
     <>
@@ -38,11 +45,13 @@ function App() {
           modalSize="compact"
           theme={darkTheme()}
         >
-          <AlloContextProvider>
-            <Layout>
-              <StreamingQuadraticFunding />
-            </Layout>
-          </AlloContextProvider>
+          <ApolloProvider client={apolloClient}>
+            <AlloContextProvider>
+              <Layout>
+                <StreamingQuadraticFunding />
+              </Layout>
+            </AlloContextProvider>
+          </ApolloProvider>
         </RainbowKitProvider>
       </WagmiConfig>
     </>
