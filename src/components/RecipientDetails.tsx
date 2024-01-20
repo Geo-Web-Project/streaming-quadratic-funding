@@ -1,4 +1,4 @@
-import { useAccount } from "wagmi";
+import { useAccount, useContractRead } from "wagmi";
 import { formatEther } from "viem";
 import Stack from "react-bootstrap/Stack";
 import Card from "react-bootstrap/Card";
@@ -10,12 +10,15 @@ import XLogo from "../assets/x-logo.svg";
 import WebIcon from "../assets/web.svg";
 import { FundGranteeProps } from "./FundGrantee";
 import useFlowingAmount from "../hooks/flowingAmount";
+import useAllo from "../hooks/allo";
 import {
   TimeInterval,
   unitOfTime,
   fromTimeUnitsToSeconds,
   roundWeiAmount,
 } from "../lib/utils";
+import { superfluidPoolAbi } from "../lib/abi/superfluidPool";
+import { GDA_POOL_ADDRESS } from "../lib/constants";
 
 type RecipientDetailsProps = FundGranteeProps & {
   flowRateToReceiver: string;
@@ -36,6 +39,14 @@ export default function RecipientDetails(props: RecipientDetailsProps) {
   } = props;
 
   const { address } = useAccount();
+  const { recipients } = useAllo();
+  const { data: matchingClaimableInfo } = useContractRead({
+    address: GDA_POOL_ADDRESS,
+    abi: superfluidPoolAbi,
+    functionName: "getClaimableNow",
+    args: [recipients ? recipients[granteeIndex].recipientAddress : "0x"],
+    watch: false,
+  });
 
   const flowRateDirect =
     BigInt(directAllocationData[granteeIndex].flowRate) -
@@ -53,11 +64,16 @@ export default function RecipientDetails(props: RecipientDetailsProps) {
     directAllocationData[granteeIndex].updatedAtTimestamp,
     flowRateDirect
   );
+  const matchingClaimable = matchingClaimableInfo
+    ? matchingClaimableInfo[0]
+    : BigInt(0);
+  const matchingUpdatedAtTimestamp = matchingClaimableInfo
+    ? Number(matchingClaimableInfo[1])
+    : matchingData.members[granteeIndex].updatedAtTimestamp;
   const streamedMatching = useFlowingAmount(
-    (BigInt(matchingData.totalAmountFlowedDistributedUntilUpdatedAt) *
-      BigInt(matchingData.members[granteeIndex].units)) /
-      BigInt(matchingData.totalUnits),
-    matchingData.updatedAtTimestamp,
+    matchingClaimable +
+      BigInt(matchingData.members[granteeIndex].totalAmountClaimed),
+    matchingUpdatedAtTimestamp,
     BigInt(matchingData.members[granteeIndex].flowRate)
   );
 

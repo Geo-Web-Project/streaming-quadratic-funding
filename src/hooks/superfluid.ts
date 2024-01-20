@@ -7,7 +7,7 @@ import {
   Host,
 } from "@superfluid-finance/sdk-core";
 import { useNetwork } from "wagmi";
-import { encodeFunctionData, Address } from "viem";
+import { encodeFunctionData, hexToBigInt, Address } from "viem";
 import { useEthersSigner, useEthersProvider } from "./ethersAdapters";
 import { gdaAbi } from "../lib/abi/gda";
 import {
@@ -225,6 +225,25 @@ export default function useSuperfluid(
     await execTransaction(op);
   };
 
+  const gdaGetFlowRate = async (account: Address) => {
+    if (!superToken) {
+      throw Error("Super Token was not initialized");
+    }
+
+    const getFlowRateData = encodeFunctionData({
+      abi: gdaAbi,
+      functionName: "getFlowRate",
+      args: [superToken.address as Address, account, GDA_POOL_ADDRESS],
+    });
+    const res = await provider.call({
+      to: GDA_CONTRACT_ADDRESS,
+      data: getFlowRateData,
+    });
+    const flowRate = res ? hexToBigInt(res as `0x${string}`).toString() : "0";
+
+    return flowRate;
+  };
+
   const gdaDistributeFlow = async (flowRate: string) => {
     if (!superToken) {
       throw Error("Super Token was not initialized");
@@ -264,6 +283,7 @@ export default function useSuperfluid(
     updateSfAccountInfo,
     updatePermissions,
     gdaDistributeFlow,
+    gdaGetFlowRate,
     getFlow,
     getAllowance,
     wrap,

@@ -35,6 +35,7 @@ export type Member = {
   flowRate: `${number}`;
   units: `${number}`;
   totalAmountClaimed: `${number}`;
+  updatedAtTimestamp: number;
 };
 
 export interface TransactionPanelState {

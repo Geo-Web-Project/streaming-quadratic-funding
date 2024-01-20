@@ -14,12 +14,14 @@ import RecipientDetails from "./RecipientDetails";
 import EditStream from "./EditStream";
 import CloseIcon from "../assets/close.svg";
 import useAllo from "../hooks/allo";
+import useSuperfluid from "../hooks/superfluid";
 import {
   TransactionPanelState,
   AllocationData,
   MatchingData,
 } from "./StreamingQuadraticFunding";
 import { passportDecoderConfig } from "../lib/passportDecoderConfig";
+import { USDCX_ADDRESS } from "../lib/constants";
 
 export type FundGranteeProps = {
   setTransactionPanelState: React.Dispatch<
@@ -39,12 +41,7 @@ export type FundGranteeProps = {
 };
 
 export default function FundGrantee(props: FundGranteeProps) {
-  const {
-    recipientId,
-    granteeAddress,
-    name,
-    setTransactionPanelState,
-  } = props;
+  const { recipientId, granteeAddress, name, setTransactionPanelState } = props;
 
   const [flowRateToReceiver, setFlowRateToReceiver] = useState("");
   const [newFlowRate, setNewFlowRate] = useState("");
@@ -53,6 +50,7 @@ export default function FundGrantee(props: FundGranteeProps) {
   const { address } = useAccount();
   const { data: walletClient } = useWalletClient();
   const { alloStrategy } = useAllo();
+  const { getFlow, superToken } = useSuperfluid(USDCX_ADDRESS, address);
   const { data: passportScore, refetch: refetchPassportScore } =
     useContractRead({
       abi: passportDecoderConfig.abi,
@@ -62,6 +60,22 @@ export default function FundGrantee(props: FundGranteeProps) {
       chainId: 84531,
       watch: false,
     });
+
+  const updateFlowRateToReceiver = async () => {
+    if (!address || !superToken) {
+      return "0";
+    }
+
+    const { flowRate: flowRateToReceiver } = await getFlow(
+      superToken,
+      address,
+      granteeAddress
+    );
+
+    setFlowRateToReceiver(flowRateToReceiver);
+
+    return flowRateToReceiver ?? "0";
+  };
 
   const fundWithAllo = async () => {
     if (!walletClient) {
@@ -118,7 +132,7 @@ export default function FundGrantee(props: FundGranteeProps) {
           receiver={granteeAddress}
           granteeName={name}
           flowRateToReceiver={flowRateToReceiver}
-          setFlowRateToReceiver={setFlowRateToReceiver}
+          updateFlowRateToReceiver={updateFlowRateToReceiver}
           newFlowRate={newFlowRate}
           setNewFlowRate={setNewFlowRate}
           isFundingMatchingPool={false}

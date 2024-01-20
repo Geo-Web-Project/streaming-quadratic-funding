@@ -54,9 +54,9 @@ interface EditStreamProps {
   granteeName: string;
   granteeIndex: number | null;
   matchingData?: MatchingData;
+  updateFlowRateToReceiver: () => Promise<string>;
   receiver: string;
   flowRateToReceiver: string;
-  setFlowRateToReceiver: React.Dispatch<React.SetStateAction<string>>;
   newFlowRate: string;
   setNewFlowRate: React.Dispatch<React.SetStateAction<string>>;
   transactionsToQueue: (() => Promise<void>)[];
@@ -82,7 +82,7 @@ export default function EditStream(props: EditStreamProps) {
     granteeIndex,
     matchingData,
     flowRateToReceiver,
-    setFlowRateToReceiver,
+    updateFlowRateToReceiver,
     newFlowRate,
     setNewFlowRate,
     transactionsToQueue,
@@ -108,7 +108,6 @@ export default function EditStream(props: EditStreamProps) {
     underlyingTokenAllowance,
     updateSfAccountInfo,
     updatePermissions,
-    getFlow,
     wrap,
     underlyingTokenApprove,
   } = useSuperfluid(isFundingMatchingPool ? "ETHx" : USDCX_ADDRESS, address);
@@ -145,7 +144,16 @@ export default function EditStream(props: EditStreamProps) {
   const minPassportScore = 3;
 
   useEffect(() => {
-    updateFlowRateToReceiver();
+    (async () => {
+      const flowRateToReceiver = await updateFlowRateToReceiver();
+      const currentStreamValue = roundWeiAmount(
+        BigInt(flowRateToReceiver) *
+          BigInt(fromTimeUnitsToSeconds(1, unitOfTime[timeInterval])),
+        4
+      );
+
+      setAmountPerTimeInterval(currentStreamValue);
+    })();
   }, [address, superToken, receiver]);
 
   const netImpact = useMemo(() => {
@@ -235,30 +243,17 @@ export default function EditStream(props: EditStreamProps) {
     transactions.push(...transactionsToQueue);
 
     await executeTransactions(transactions);
-    await updateFlowRateToReceiver();
     await updateSfAccountInfo(superToken);
 
-    setStep(Step.SUCCESS);
-  };
-
-  const updateFlowRateToReceiver = async () => {
-    if (!address || !superToken) {
-      return;
-    }
-
-    const { flowRate: flowRateToReceiver } = await getFlow(
-      superToken,
-      address,
-      receiver
-    );
+    const flowRateToReceiver = await updateFlowRateToReceiver();
     const currentStreamValue = roundWeiAmount(
       BigInt(flowRateToReceiver) *
         BigInt(fromTimeUnitsToSeconds(1, unitOfTime[timeInterval])),
       4
     );
 
-    setFlowRateToReceiver(flowRateToReceiver);
     setAmountPerTimeInterval(currentStreamValue);
+    setStep(Step.SUCCESS);
   };
 
   return (
@@ -391,7 +386,9 @@ export default function EditStream(props: EditStreamProps) {
               <Button
                 variant="success"
                 disabled={
-                  !amountPerTimeInterval || Number(amountPerTimeInterval) <= 0
+                  !amountPerTimeInterval ||
+                  Number(amountPerTimeInterval) <= 0 ||
+                  newFlowRate === flowRateToReceiver
                 }
                 className="py-1 rounded-3 text-white"
                 onClick={() => setStep(Step.WRAP)}
@@ -658,7 +655,7 @@ export default function EditStream(props: EditStreamProps) {
                   />
                 </Button>
               </Stack>
-              <Button variant="success" className="w-100 rounded-3">
+              <Button variant="secondary" className="w-100 rounded-3">
                 <Card.Link
                   href="https://passport.gitcoin.co"
                   target="_blank"
@@ -669,11 +666,12 @@ export default function EditStream(props: EditStreamProps) {
                 </Card.Link>
               </Button>
               <Button
-                variant="transparent"
-                className="m-0 ms-auto fs-4 text-info"
+                variant="success"
+                disabled={!passportScore || passportScore < minPassportScore}
+                className="w-100 m-0 ms-auto mt-1 fs-4 text-white fw-bold"
                 onClick={() => setStep(Step.REVIEW)}
               >
-                Skip
+                Continue
               </Button>
             </Stack>
           </Accordion.Collapse>

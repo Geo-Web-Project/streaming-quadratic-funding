@@ -60,6 +60,7 @@ const GDA_POOL_QUERY = gql`
         }
         units
         totalAmountClaimed
+        updatedAtTimestamp
       }
     }
   }
@@ -93,7 +94,7 @@ export default function useRoundQuery(userAddress?: Address) {
   );
   const { data: matchingPoolQueryResult } = useQuery(GDA_POOL_QUERY, {
     variables: {
-      gdaPool: GDA_POOL_ADDRESS,
+      gdaPool: GDA_POOL_ADDRESS.toLowerCase(),
     },
     pollInterval: 10000,
   });
@@ -233,6 +234,7 @@ export default function useRoundQuery(userAddress?: Address) {
         flowRate: memberFlowRate.toString() as `${number}`,
         units: memberUnits,
         totalAmountClaimed: pool.poolMembers[index].totalAmountClaimed,
+        updatedAtTimestamp: pool.poolMembers[index].updatedAtTimestamp,
       });
     }
 

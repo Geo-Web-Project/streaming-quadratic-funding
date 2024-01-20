@@ -9,7 +9,7 @@ import EditStream from "./EditStream";
 import CloseIcon from "../assets/close.svg";
 import useSuperfluid from "../hooks/superfluid";
 import { TransactionPanelState } from "./StreamingQuadraticFunding";
-import { MATCHING_POOL_ADDRESS } from "../lib/constants";
+import { GDA_POOL_ADDRESS } from "../lib/constants";
 
 interface FundMatchingPoolProps {
   setTransactionPanelState: React.Dispatch<
@@ -24,7 +24,22 @@ export default function FundMatchingPool(props: FundMatchingPoolProps) {
   const [newFlowRate, setNewFlowRate] = useState("");
 
   const { address } = useAccount();
-  const { gdaDistributeFlow } = useSuperfluid("ETHx", address);
+  const { gdaDistributeFlow, superToken, gdaGetFlowRate } = useSuperfluid(
+    "ETHx",
+    address
+  );
+
+  const updateFlowRateToReceiver = async () => {
+    if (!address || !superToken) {
+      return "0";
+    }
+
+    const flowRateToReceiver = await gdaGetFlowRate(address);
+
+    setFlowRateToReceiver(flowRateToReceiver);
+
+    return flowRateToReceiver ?? "0";
+  };
 
   return (
     <Stack
@@ -62,14 +77,16 @@ export default function FundMatchingPool(props: FundMatchingPoolProps) {
         />
         <EditStream
           granteeName="GDA Matching Pool"
-          receiver={MATCHING_POOL_ADDRESS}
+          receiver={GDA_POOL_ADDRESS}
+          updateFlowRateToReceiver={updateFlowRateToReceiver}
           flowRateToReceiver={flowRateToReceiver}
           granteeIndex={null}
-          setFlowRateToReceiver={setFlowRateToReceiver}
           newFlowRate={newFlowRate}
           setNewFlowRate={setNewFlowRate}
           isFundingMatchingPool={true}
-          transactionsToQueue={[async () => await gdaDistributeFlow(newFlowRate)]}
+          transactionsToQueue={[
+            async () => await gdaDistributeFlow(newFlowRate),
+          ]}
         />
       </Stack>
     </Stack>
