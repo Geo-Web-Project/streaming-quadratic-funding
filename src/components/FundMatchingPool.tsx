@@ -7,10 +7,10 @@ import Button from "react-bootstrap/Button";
 import Image from "react-bootstrap/Image";
 import MatchingPoolDetails from "./MatchingPoolDetails";
 import EditStream from "./EditStream";
+import { TransactionPanelState } from "./StreamingQuadraticFunding";
 import CloseIcon from "../assets/close.svg";
 import useSuperfluid from "../hooks/superfluid";
-import { TransactionPanelState } from "./StreamingQuadraticFunding";
-import { GDA_POOL_ADDRESS } from "../lib/constants";
+import useAllo from "../hooks/allo";
 
 interface FundMatchingPoolProps {
   setTransactionPanelState: React.Dispatch<
@@ -29,6 +29,7 @@ export default function FundMatchingPool(props: FundMatchingPoolProps) {
     "ETHx",
     address
   );
+  const { gdaPool } = useAllo();
 
   const updateFlowRateToReceiver = async () => {
     if (!address || !superToken) {
@@ -83,7 +84,7 @@ export default function FundMatchingPool(props: FundMatchingPoolProps) {
         />
         <EditStream
           granteeName="GDA Matching Pool"
-          receiver={GDA_POOL_ADDRESS}
+          receiver={gdaPool ?? "0x"}
           updateFlowRateToReceiver={updateFlowRateToReceiver}
           flowRateToReceiver={flowRateToReceiver}
           granteeIndex={null}

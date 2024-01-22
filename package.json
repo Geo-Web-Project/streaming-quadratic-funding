@@ -3,9 +3,9 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
+    "dev": "source .env && vite --mode $APP_ENV",
+    "build": "tsc && vite build --mode $APP_ENV",
+    "preview": "source .env && vite preview --mode $APP_ENV",
     "typecheck": "tsc --noemit",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "prettier": "prettier -w src"

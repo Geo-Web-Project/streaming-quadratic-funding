@@ -51,6 +51,7 @@ export const AlloContext = createContext<{
   recipients: Recipient[] | null;
   recipientsDetails: RecipientsDetails[] | null;
   passportDecoder: PassportDecoder | null;
+  gdaPool: Address | null;
 } | null>(null);
 
 export function useAlloContext() {
@@ -74,6 +75,7 @@ export function AlloContextProvider({
   >(null);
   const [passportDecoder, setPassportDecoder] =
     useState<PassportDecoder | null>(null);
+  const [gdaPool, setGdaPool] = useState<Address | null>(null);
 
   const { chain } = useNetwork();
   const publicClient = usePublicClient();
@@ -143,12 +145,19 @@ export function AlloContextProvider({
         minPassportScore: (await alloStrategy.getMinPassportScore()) as bigint,
         address: await alloStrategy.getPassportDecoder(),
       });
+      setGdaPool(await alloStrategy.getGdaPool());
     })();
   }, []);
 
   return (
     <AlloContext.Provider
-      value={{ alloStrategy, recipients, recipientsDetails, passportDecoder }}
+      value={{
+        alloStrategy,
+        recipients,
+        recipientsDetails,
+        passportDecoder,
+        gdaPool,
+      }}
     >
       {children}
     </AlloContext.Provider>

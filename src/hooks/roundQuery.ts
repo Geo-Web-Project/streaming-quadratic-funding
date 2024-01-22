@@ -8,11 +8,7 @@ import {
   AllocationData,
   MatchingData,
 } from "../components/StreamingQuadraticFunding";
-import {
-  USDCX_ADDRESS,
-  GDA_CONTRACT_ADDRESS,
-  GDA_POOL_ADDRESS,
-} from "../lib/constants";
+import { USDCX_ADDRESS, GDA_CONTRACT_ADDRESS } from "../lib/constants";
 
 type PoolMemberQueryResult = {
   account: { id: Address };
@@ -77,7 +73,7 @@ export default function useRoundQuery(userAddress?: Address) {
     useState<AllocationData[]>();
   const [matchingData, setMatchingData] = useState<MatchingData>();
 
-  const { recipients } = useAllo();
+  const { recipients, gdaPool } = useAllo();
   const superApps = recipients
     ? recipients.map((recipient) => recipient.superApp.toLowerCase())
     : [];
@@ -98,7 +94,7 @@ export default function useRoundQuery(userAddress?: Address) {
   );
   const { data: matchingPoolQueryResult } = useQuery(GDA_POOL_QUERY, {
     variables: {
-      gdaPool: GDA_POOL_ADDRESS.toLowerCase(),
+      gdaPool: gdaPool?.toLowerCase() ?? "",
     },
     pollInterval: 10000,
   });
@@ -108,6 +104,7 @@ export default function useRoundQuery(userAddress?: Address) {
       if (
         !publicClient ||
         !recipients ||
+        !gdaPool ||
         !userAllocationQueryResult ||
         !directAllocationQueryResult ||
         directAllocationQueryResult?.accounts.length === 0 ||
@@ -230,7 +227,7 @@ export default function useRoundQuery(userAddress?: Address) {
       address: GDA_CONTRACT_ADDRESS,
       abi: gdaAbi,
       functionName: "getPoolAdjustmentFlowRate",
-      args: [GDA_POOL_ADDRESS],
+      args: [gdaPool ?? "0x"],
     });
     const adjustedFlowRate =
       BigInt(pool.flowRate) - adjustmentFlowRate === BigInt(0)

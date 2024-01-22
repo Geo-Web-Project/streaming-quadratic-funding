@@ -18,7 +18,6 @@ import {
   roundWeiAmount,
 } from "../lib/utils";
 import { superfluidPoolAbi } from "../lib/abi/superfluidPool";
-import { GDA_POOL_ADDRESS } from "../lib/constants";
 
 type RecipientDetailsProps = FundGranteeProps & {
   flowRateToReceiver: string;
@@ -39,9 +38,9 @@ export default function RecipientDetails(props: RecipientDetailsProps) {
   } = props;
 
   const { address } = useAccount();
-  const { recipients } = useAllo();
+  const { recipients, gdaPool } = useAllo();
   const { data: matchingClaimableInfo } = useContractRead({
-    address: GDA_POOL_ADDRESS,
+    address: gdaPool ?? "0x",
     abi: superfluidPoolAbi,
     functionName: "getClaimableNow",
     args: [recipients ? recipients[granteeIndex].recipientAddress : "0x"],

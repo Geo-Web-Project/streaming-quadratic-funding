@@ -9,12 +9,12 @@ import {
 import { useNetwork } from "wagmi";
 import { encodeFunctionData, hexToBigInt, Address } from "viem";
 import { useEthersSigner, useEthersProvider } from "./ethersAdapters";
+import useAllo from "./allo";
 import { gdaAbi } from "../lib/abi/gda";
 import {
   SUPERFLUID_HOST_ADDRESS,
   USDCX_ADDRESS,
   GDA_CONTRACT_ADDRESS,
-  GDA_POOL_ADDRESS,
 } from "../lib/constants";
 
 export default function useSuperfluid(
@@ -32,9 +32,11 @@ export default function useSuperfluid(
     timestamp: 0,
   });
 
-  const { chain } = useNetwork();
   const signer = useEthersSigner();
   const provider = useEthersProvider();
+  const { chain } = useNetwork();
+  const { gdaPool } = useAllo();
+
   const host = new Host(SUPERFLUID_HOST_ADDRESS);
 
   useEffect(() => {
@@ -230,10 +232,14 @@ export default function useSuperfluid(
       throw Error("Super Token was not initialized");
     }
 
+    if (!gdaPool) {
+      throw Error("Could not find GDA pool address");
+    }
+
     const getFlowRateData = encodeFunctionData({
       abi: gdaAbi,
       functionName: "getFlowRate",
-      args: [superToken.address as Address, account, GDA_POOL_ADDRESS],
+      args: [superToken.address as Address, account, gdaPool],
     });
     const res = await provider.call({
       to: GDA_CONTRACT_ADDRESS,
@@ -253,13 +259,17 @@ export default function useSuperfluid(
       throw Error("Could not find the account address");
     }
 
+    if (!gdaPool) {
+      throw Error("Could not find GDA pool address");
+    }
+
     const distributeFlowData = encodeFunctionData({
       abi: gdaAbi,
       functionName: "distributeFlow",
       args: [
         superToken.address as Address,
         accountAddress as Address,
-        GDA_POOL_ADDRESS,
+        gdaPool,
         BigInt(flowRate),
         "0x",
       ],
