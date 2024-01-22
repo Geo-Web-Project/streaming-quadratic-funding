@@ -238,7 +238,15 @@ export default function FundingSources(props: FundingSourcesProps) {
       </Card>
       <Card
         className="position-absolute bg-blue text-white mt-4 px-2"
-        style={{ width: 340, bottom: window.screen.height < 1080 ? 106 : 126 }}
+        style={{
+          width: 340,
+          bottom:
+            window.screen.height < 1080
+              ? 100
+              : window.screen.height === 1080
+              ? 90
+              : 126,
+        }}
       >
         <Card.Header className="text-secondary border-purple px-0 py-1">
           Legend

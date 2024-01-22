@@ -6,7 +6,11 @@ import ConnectWallet from "./ConnectWallet";
 
 export default function Header() {
   return (
-    <Navbar expand className="bg-dark text-white">
+    <Navbar
+      expand
+      className="bg-dark text-white"
+      style={{ position: "sticky", top: 0, zIndex: 2 }}
+    >
       <Container fluid>
         <Row className="justify-content-between align-items-center w-100">
           <Col xs={5}>

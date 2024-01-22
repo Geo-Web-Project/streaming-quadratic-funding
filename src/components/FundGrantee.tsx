@@ -10,6 +10,7 @@ import Stack from "react-bootstrap/Stack";
 import Card from "react-bootstrap/Card";
 import Button from "react-bootstrap/Button";
 import Image from "react-bootstrap/Image";
+import Offcanvas from "react-bootstrap/Offcanvas";
 import RecipientDetails from "./RecipientDetails";
 import EditStream from "./EditStream";
 import CloseIcon from "../assets/close.svg";
@@ -58,6 +59,7 @@ export default function FundGrantee(props: FundGranteeProps) {
       functionName: "getScore",
       args: [address as Address],
       chainId: 84531,
+      enabled: address ? true : false,
       watch: false,
     });
 
@@ -97,11 +99,22 @@ export default function FundGrantee(props: FundGranteeProps) {
     });
   };
 
+  const closeOffcanvas = () =>
+    setTransactionPanelState({
+      show: false,
+      isMatchingPool: false,
+      granteeIndex: null,
+    });
+
   return (
-    <Stack
-      direction="vertical"
-      gap={2}
-      className="position-relative h-100 bg-dark border-top border-secondary px-3"
+    <Offcanvas
+      show
+      scroll
+      onHide={closeOffcanvas}
+      placement="end"
+      backdrop={false}
+      className="w-25 bg-dark px-3 overflow-auto border-0 border-top border-secondary"
+      style={{ top: 62 }}
     >
       <Stack
         direction="horizontal"
@@ -111,13 +124,7 @@ export default function FundGrantee(props: FundGranteeProps) {
         <Button
           variant="transparent"
           className="position-absolute end-0 px-2 me-1 py-0"
-          onClick={() =>
-            setTransactionPanelState({
-              show: false,
-              isMatchingPool: false,
-              granteeIndex: null,
-            })
-          }
+          onClick={closeOffcanvas}
         >
           <Image src={CloseIcon} alt="close" width={28} />
         </Button>
@@ -148,6 +155,6 @@ export default function FundGrantee(props: FundGranteeProps) {
           {...props}
         />
       </Stack>
-    </Stack>
+    </Offcanvas>
   );
 }

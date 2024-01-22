@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAccount } from "wagmi";
+import Offcanvas from "react-bootstrap/Offcanvas";
 import Stack from "react-bootstrap/Stack";
 import Card from "react-bootstrap/Card";
 import Button from "react-bootstrap/Button";
@@ -41,11 +42,22 @@ export default function FundMatchingPool(props: FundMatchingPoolProps) {
     return flowRateToReceiver ?? "0";
   };
 
+  const closeOffcanvas = () =>
+    setTransactionPanelState({
+      show: false,
+      isMatchingPool: false,
+      granteeIndex: null,
+    });
+
   return (
-    <Stack
-      direction="vertical"
-      gap={2}
-      className="position-relative h-100 bg-dark border-top border-secondary px-3"
+    <Offcanvas
+      show
+      scroll
+      onHide={closeOffcanvas}
+      placement="start"
+      backdrop={false}
+      className="w-25 bg-dark px-3 overflow-auto border-0 border-top border-secondary"
+      style={{ top: 62 }}
     >
       <Stack
         direction="horizontal"
@@ -55,13 +67,7 @@ export default function FundMatchingPool(props: FundMatchingPoolProps) {
         <Button
           variant="transparent"
           className="position-absolute end-0 px-2 py-0"
-          onClick={() =>
-            setTransactionPanelState({
-              show: false,
-              isMatchingPool: false,
-              granteeIndex: null,
-            })
-          }
+          onClick={closeOffcanvas}
         >
           <Image src={CloseIcon} alt="close" width={28} />
         </Button>
@@ -89,6 +95,6 @@ export default function FundMatchingPool(props: FundMatchingPoolProps) {
           ]}
         />
       </Stack>
-    </Stack>
+    </Offcanvas>
   );
 }

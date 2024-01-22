@@ -55,6 +55,7 @@ export default function Grantees(props: GranteesProps) {
             top: endYScale(i) - 105,
             width: VIZ_CARD_WIDTH_GRANTEE,
             height: dimensions.pathHeight,
+            zIndex:1,
           }}
           key={i}
         >
