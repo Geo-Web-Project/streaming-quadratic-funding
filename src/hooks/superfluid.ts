@@ -41,7 +41,7 @@ export default function useSuperfluid(
 
   useEffect(() => {
     (async () => {
-      if (!chain || !accountAddress) {
+      if (!chain) {
         return;
       }
 
@@ -58,20 +58,22 @@ export default function useSuperfluid(
         superToken = await sfFramework.loadWrapperSuperToken(tokenAddress);
       }
 
-      updateSfAccountInfo(superToken);
-
       setSuperToken(superToken);
       setSfFramework(sfFramework);
     })();
   }, [chain, accountAddress]);
 
+  useEffect(() => {
+    if (!superToken || !accountAddress) {
+      return;
+    }
+
+    updateSfAccountInfo(superToken);
+  }, [superToken, accountAddress]);
+
   const updateSfAccountInfo = async (
     superToken: NativeAssetSuperToken | WrapperSuperToken
   ) => {
-    if (!superToken) {
-      throw Error("Super Token was not initialized");
-    }
-
     if (!accountAddress) {
       throw Error("Could not find the account address");
     }
@@ -227,11 +229,10 @@ export default function useSuperfluid(
     await execTransaction(op);
   };
 
-  const gdaGetFlowRate = async (account: Address) => {
-    if (!superToken) {
-      throw Error("Super Token was not initialized");
-    }
-
+  const gdaGetFlowRate = async (
+    account: Address,
+    superTokenAddress: Address
+  ) => {
     if (!gdaPool) {
       throw Error("Could not find GDA pool address");
     }
@@ -239,7 +240,7 @@ export default function useSuperfluid(
     const getFlowRateData = encodeFunctionData({
       abi: gdaAbi,
       functionName: "getFlowRate",
-      args: [superToken.address as Address, account, gdaPool],
+      args: [superTokenAddress, account, gdaPool],
     });
     const res = await provider.call({
       to: GDA_CONTRACT_ADDRESS,
