@@ -59,12 +59,13 @@ export default function StreamingQuadraticFunding() {
     });
 
   const { address } = useAccount();
-  const { recipients } = useAllo();
+  const { recipients, recipientsDetails } = useAllo();
   const { userAllocationData, directAllocationData, matchingData } =
     useRoundQuery(address);
 
   if (
     !recipients ||
+    !recipientsDetails ||
     !userAllocationData ||
     !directAllocationData ||
     !matchingData

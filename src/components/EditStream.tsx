@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import { useAccount, useNetwork, useBalance } from "wagmi";
-import { formatEther, parseEther, formatUnits } from "viem";
+import { useAccount, useNetwork, useBalance, useContractRead } from "wagmi";
+import { formatEther, parseEther, formatUnits, Address } from "viem";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import Accordion from "react-bootstrap/Accordion";
@@ -34,6 +34,8 @@ import { MatchingData } from "../components/StreamingQuadraticFunding";
 import useFlowingAmount from "../hooks/flowingAmount";
 import useSuperfluid from "../hooks/superfluid";
 import useTransactionsQueue from "../hooks/transactionsQueue";
+import useAllo from "../hooks/allo";
+import { passportDecoderAbi } from "../lib/abi/passportDecoder";
 import {
   TimeInterval,
   unitOfTime,
@@ -61,8 +63,6 @@ interface EditStreamProps {
   setNewFlowRate: React.Dispatch<React.SetStateAction<string>>;
   transactionsToQueue: (() => Promise<void>)[];
   isFundingMatchingPool: boolean;
-  passportScore?: number | null;
-  refetchPassportScore?: () => void;
 }
 
 enum Step {
@@ -87,8 +87,6 @@ export default function EditStream(props: EditStreamProps) {
     setNewFlowRate,
     transactionsToQueue,
     isFundingMatchingPool,
-    passportScore,
-    refetchPassportScore,
     receiver,
   } = props;
 
@@ -101,6 +99,7 @@ export default function EditStream(props: EditStreamProps) {
 
   const { address } = useAccount();
   const { chain } = useNetwork();
+  const { passportDecoder } = useAllo();
   const {
     superToken,
     startingSuperTokenBalance,
@@ -128,6 +127,15 @@ export default function EditStream(props: EditStreamProps) {
     transactionError,
     executeTransactions,
   } = useTransactionsQueue();
+  const { data: passportScore, refetch: refetchPassportScore } =
+    useContractRead({
+      abi: passportDecoderAbi,
+      address: passportDecoder?.address ?? "0x",
+      functionName: "getScore",
+      args: [address as Address],
+      enabled: address ? true : false,
+      watch: false,
+    });
 
   const shouldWrap = Number(wrapAmount) > 0 ? true : false;
   const totalTransactions =
@@ -141,7 +149,6 @@ export default function EditStream(props: EditStreamProps) {
   const superTokenSymbol = isFundingMatchingPool ? "ETHx" : "USDCx";
   const superTokenIcon = isFundingMatchingPool ? ETHLogo : USDCLogo;
   const underlyingTokenName = isFundingMatchingPool ? "ETH" : "USDC";
-  const minPassportScore = 3;
 
   useEffect(() => {
     (async () => {
@@ -255,6 +262,23 @@ export default function EditStream(props: EditStreamProps) {
     setAmountPerTimeInterval(currentStreamValue);
     setStep(Step.SUCCESS);
   };
+
+  if (!passportDecoder) {
+    return (
+      <>
+        <Spinner
+          animation="border"
+          role="status"
+          className="mx-auto mt-5 p-3"
+        ></Spinner>
+        <Card.Text className="text-center">
+          Waiting for passport details...
+        </Card.Text>
+      </>
+    );
+  }
+
+  const { minPassportScore } = passportDecoder;
 
   return (
     <Accordion activeKey={step}>
@@ -408,7 +432,9 @@ export default function EditStream(props: EditStreamProps) {
           onClick={() => setStep(Step.WRAP)}
           style={{
             pointerEvents:
-              step === Step.SELECT_AMOUNT || step === Step.WRAP
+              step === Step.SELECT_AMOUNT ||
+              step === Step.WRAP ||
+              step === Step.SUCCESS
                 ? "none"
                 : "auto",
           }}
@@ -630,15 +656,17 @@ export default function EditStream(props: EditStreamProps) {
               >
                 <Image src={PassportIcon} alt="passport" width={36} />
                 <Card.Text className="m-0 fs-1 fw-bold">
-                  {passportScore ? parseFloat(passportScore.toFixed(3)) : "N/A"}
+                  {passportScore
+                    ? parseFloat((Number(passportScore) / 10000).toFixed(3))
+                    : "N/A"}
                 </Card.Text>
                 <Card.Text className="m-0 fs-5" style={{ width: 80 }}>
-                  min. {minPassportScore} required for matching
+                  min. {Number(minPassportScore) / 10000} required for matching
                 </Card.Text>
                 <Button
                   variant="transparent"
                   className="p-0"
-                  onClick={refetchPassportScore}
+                  onClick={() => refetchPassportScore({ throwOnError: false })}
                 >
                   <Image
                     src={ReloadIcon}

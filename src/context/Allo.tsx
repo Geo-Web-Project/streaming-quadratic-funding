@@ -41,10 +41,16 @@ export enum Status {
   Canceled,
 }
 
+type PassportDecoder = {
+  minPassportScore: bigint;
+  address: Address;
+};
+
 export const AlloContext = createContext<{
   alloStrategy: SQFSuperFluidStrategy;
-  recipients?: Recipient[];
-  recipientsDetails?: RecipientsDetails[];
+  recipients: Recipient[] | null;
+  recipientsDetails: RecipientsDetails[] | null;
+  passportDecoder: PassportDecoder | null;
 } | null>(null);
 
 export function useAlloContext() {
@@ -62,9 +68,12 @@ export function AlloContextProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [recipients, setRecipients] = useState<Recipient[]>();
-  const [recipientsDetails, setRecipientsDetails] =
-    useState<RecipientsDetails[]>();
+  const [recipients, setRecipients] = useState<Recipient[] | null>(null);
+  const [recipientsDetails, setRecipientsDetails] = useState<
+    RecipientsDetails[] | null
+  >(null);
+  const [passportDecoder, setPassportDecoder] =
+    useState<PassportDecoder | null>(null);
 
   const { chain } = useNetwork();
   const publicClient = usePublicClient();
@@ -130,12 +139,16 @@ export function AlloContextProvider({
 
       setRecipients(recipients as Recipient[]);
       setRecipientsDetails(recipientsDetails);
+      setPassportDecoder({
+        minPassportScore: (await alloStrategy.getMinPassportScore()) as bigint,
+        address: await alloStrategy.getPassportDecoder(),
+      });
     })();
   }, []);
 
   return (
     <AlloContext.Provider
-      value={{ alloStrategy, recipients, recipientsDetails }}
+      value={{ alloStrategy, recipients, recipientsDetails, passportDecoder }}
     >
       {children}
     </AlloContext.Provider>

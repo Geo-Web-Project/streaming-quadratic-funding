@@ -1,10 +1,5 @@
 import { useState } from "react";
-import {
-  useAccount,
-  useContractRead,
-  useWalletClient,
-  usePublicClient,
-} from "wagmi";
+import { useAccount, useWalletClient, usePublicClient } from "wagmi";
 import { Address } from "viem";
 import Stack from "react-bootstrap/Stack";
 import Card from "react-bootstrap/Card";
@@ -21,7 +16,6 @@ import {
   AllocationData,
   MatchingData,
 } from "./StreamingQuadraticFunding";
-import { passportDecoderConfig } from "../lib/passportDecoderConfig";
 import { USDCX_ADDRESS } from "../lib/constants";
 
 export type FundGranteeProps = {
@@ -52,16 +46,6 @@ export default function FundGrantee(props: FundGranteeProps) {
   const { data: walletClient } = useWalletClient();
   const { alloStrategy } = useAllo();
   const { getFlow, superToken } = useSuperfluid(USDCX_ADDRESS, address);
-  const { data: passportScore, refetch: refetchPassportScore } =
-    useContractRead({
-      abi: passportDecoderConfig.abi,
-      address: passportDecoderConfig.addresses["84531"] as Address,
-      functionName: "getScore",
-      args: [address as Address],
-      chainId: 84531,
-      enabled: address ? true : false,
-      watch: false,
-    });
 
   const updateFlowRateToReceiver = async () => {
     if (!address || !superToken) {
@@ -79,7 +63,7 @@ export default function FundGrantee(props: FundGranteeProps) {
     return flowRateToReceiver ?? "0";
   };
 
-  const fundWithAllo = async () => {
+  const allocate = async () => {
     if (!walletClient) {
       return;
     }
@@ -143,15 +127,7 @@ export default function FundGrantee(props: FundGranteeProps) {
           newFlowRate={newFlowRate}
           setNewFlowRate={setNewFlowRate}
           isFundingMatchingPool={false}
-          passportScore={passportScore ? Number(passportScore) / 10000 : null}
-          refetchPassportScore={() => {
-            refetchPassportScore({ throwOnError: false });
-          }}
-          transactionsToQueue={[
-            passportScore && passportScore > 30000
-              ? fundWithAllo
-              : fundWithAllo,
-          ]}
+          transactionsToQueue={[allocate]}
           {...props}
         />
       </Stack>
