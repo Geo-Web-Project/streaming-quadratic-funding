@@ -22,7 +22,11 @@ type PoolMemberQueryResult = {
 const USER_ALLOCATION_QUERY = gql`
   query UserAllocationQuery($address: String, $token: String) {
     account(id: $address) {
-      outflows(where: { token: $token }) {
+      outflows(
+        where: { token: $token }
+        orderBy: updatedAtTimestamp
+        orderDirection: desc
+      ) {
         receiver {
           id
         }
@@ -136,6 +140,22 @@ export default function useRoundQuery(userAddress?: Address) {
   const getUserAllocationData = () => {
     const userAllocationData = [];
 
+    const calcStreamedIncludingClosed = (
+      outflows: {
+        receiver: { id: Address };
+        streamedUntilUpdatedAt: `${number}`;
+      }[],
+      superAppAddress: string
+    ) =>
+      outflows
+        .filter(
+          (outflow) => outflow.receiver.id === superAppAddress.toLowerCase()
+        )
+        .reduce(
+          (acc, outflow) => acc + BigInt(outflow.streamedUntilUpdatedAt),
+          BigInt(0)
+        );
+
     if (userAddress && userAllocationQueryResult.account) {
       const {
         account: { outflows },
@@ -149,7 +169,12 @@ export default function useRoundQuery(userAddress?: Address) {
         userAllocationData.push({
           flowRate: index >= 0 ? outflows[index].currentFlowRate : "0",
           streamedUntilUpdatedAt:
-            index >= 0 ? outflows[index].streamedUntilUpdatedAt : "0",
+            index >= 0
+              ? (calcStreamedIncludingClosed(
+                  outflows,
+                  superApp
+                ).toString() as `${number}`)
+              : "0",
           updatedAtTimestamp:
             index >= 0 ? outflows[index].updatedAtTimestamp : 0,
         });
