@@ -1,4 +1,5 @@
 import { formatEther } from "viem";
+import { IPFS_GATEWAY } from "./constants";
 
 export enum TimeInterval {
   DAY = "/day",
@@ -132,4 +133,8 @@ export function clampText(str: string, newLength: number) {
   }
 
   return `${str.slice(0, newLength - 4)}...`;
+}
+
+export function getGatewayUrl(uri: string) {
+  return uri.startsWith("ipfs://") ? `${IPFS_GATEWAY}/${uri.slice(7)}` : uri;
 }

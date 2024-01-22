@@ -5,6 +5,7 @@ import { optimismGoerli } from "wagmi/chains";
 import { SQFSuperFluidStrategy } from "@allo-team/allo-v2-sdk/";
 import { recipientIds } from "../lib/recipientIds";
 import { sqfStrategyAbi } from "../lib/abi/sqfStrategy";
+import { getGatewayUrl } from "../lib/utils";
 import { SQF_STRATEGY_ADDRESS, ALLO_POOL_ID } from "../lib/constants";
 
 export type Recipient = {
@@ -22,6 +23,14 @@ export type Metadata = {
   pointer: string;
 };
 
+type RecipientsDetails = {
+  name: string;
+  description: string;
+  image: string;
+  website: string;
+  social: string;
+};
+
 export enum Status {
   None,
   Pending,
@@ -35,6 +44,7 @@ export enum Status {
 export const AlloContext = createContext<{
   alloStrategy: SQFSuperFluidStrategy;
   recipients?: Recipient[];
+  recipientsDetails?: RecipientsDetails[];
 } | null>(null);
 
 export function useAlloContext() {
@@ -53,6 +63,8 @@ export function AlloContextProvider({
   children: React.ReactNode;
 }) {
   const [recipients, setRecipients] = useState<Recipient[]>();
+  const [recipientsDetails, setRecipientsDetails] =
+    useState<RecipientsDetails[]>();
 
   const { chain } = useNetwork();
   const publicClient = usePublicClient();
@@ -77,18 +89,54 @@ export function AlloContextProvider({
         }),
       });
 
-      if (res.every((elem) => elem.status === "success")) {
-        const recipients = res.map((elem) => elem.result);
-
-        setRecipients(recipients as Recipient[]);
-      } else {
+      if (res.every((elem) => elem.status !== "success")) {
         throw Error("Recipients not found");
       }
+
+      const recipients = res.map((elem) => elem.result);
+      const recipientsDetails = [];
+      const emptyRecipientDetails = {
+        name: "",
+        description: "",
+        image: "",
+        website: "",
+        social: "",
+      };
+
+      for (const recipient of recipients) {
+        const pointer = recipient?.metadata?.pointer;
+
+        if (pointer) {
+          try {
+            const detailsRes = await fetch(getGatewayUrl(pointer));
+            const { name, description, image, website, social } =
+              await detailsRes.json();
+
+            recipientsDetails.push({
+              name,
+              description,
+              image: getGatewayUrl(image),
+              website,
+              social,
+            });
+          } catch (err) {
+            recipientsDetails.push(emptyRecipientDetails);
+            console.error(err);
+          }
+        } else {
+          recipientsDetails.push(emptyRecipientDetails);
+        }
+      }
+
+      setRecipients(recipients as Recipient[]);
+      setRecipientsDetails(recipientsDetails);
     })();
   }, []);
 
   return (
-    <AlloContext.Provider value={{ alloStrategy, recipients }}>
+    <AlloContext.Provider
+      value={{ alloStrategy, recipients, recipientsDetails }}
+    >
       {children}
     </AlloContext.Provider>
   );

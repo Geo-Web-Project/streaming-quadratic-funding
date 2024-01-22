@@ -1,7 +1,7 @@
 import { useAlloContext } from "../context/Allo";
 
 export default function useAllo() {
-  const { alloStrategy, recipients } = useAlloContext();
+  const { alloStrategy, recipients, recipientsDetails } = useAlloContext();
 
-  return { alloStrategy, recipients };
+  return { alloStrategy, recipients, recipientsDetails };
 }
