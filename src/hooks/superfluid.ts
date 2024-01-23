@@ -14,7 +14,7 @@ import { gdaAbi } from "../lib/abi/gda";
 import {
   SUPERFLUID_HOST_ADDRESS,
   SUPERFLUID_RESOLVER_ADDRESS,
-  USDCX_ADDRESS,
+  DAIX_ADDRESS,
   GDA_CONTRACT_ADDRESS,
 } from "../lib/constants";
 
@@ -95,7 +95,7 @@ export default function useSuperfluid(
     const underlyingToken = superToken.underlyingToken;
     const underlyingTokenAllowance = await underlyingToken?.allowance({
       owner: accountAddress,
-      spender: USDCX_ADDRESS,
+      spender: DAIX_ADDRESS,
       providerOrSigner: provider,
     });
 

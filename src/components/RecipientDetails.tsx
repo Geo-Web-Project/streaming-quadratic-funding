@@ -107,7 +107,7 @@ export default function RecipientDetails(props: RecipientDetailsProps) {
                   )}
                 </Card.Text>
                 <Card.Text as="span" className="fs-6">
-                  USDCx <br />
+                  DAIx <br />
                   per <br />
                   month
                 </Card.Text>

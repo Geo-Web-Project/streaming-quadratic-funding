@@ -20,7 +20,7 @@ import CopyTooltip from "./CopyTooltip";
 import InfoIcon from "../assets/info.svg";
 import OpLogo from "../assets/op-logo.svg";
 import ETHLogo from "../assets/eth-white.svg";
-import USDCLogo from "../assets/usdc-white.svg";
+import DAILogo from "../assets/dai-white.svg";
 import DoneIcon from "../assets/done.svg";
 import XIcon from "../assets/x-logo.svg";
 import LensIcon from "../assets/lens.svg";
@@ -47,8 +47,8 @@ import {
   sqrtBigInt,
 } from "../lib/utils";
 import {
-  USDC_ADDRESS,
-  USDCX_ADDRESS,
+  DAI_ADDRESS,
+  DAIX_ADDRESS,
   SQF_STRATEGY_ADDRESS,
 } from "../lib/constants";
 
@@ -109,7 +109,7 @@ export default function EditStream(props: EditStreamProps) {
     updatePermissions,
     wrap,
     underlyingTokenApprove,
-  } = useSuperfluid(isFundingMatchingPool ? "ETHx" : USDCX_ADDRESS, address);
+  } = useSuperfluid(isFundingMatchingPool ? "ETHx" : DAIX_ADDRESS, address);
   const superTokenBalance = useFlowingAmount(
     BigInt(startingSuperTokenBalance.availableBalance ?? 0),
     startingSuperTokenBalance.timestamp ?? 0,
@@ -120,7 +120,7 @@ export default function EditStream(props: EditStreamProps) {
     cacheTime: 10000,
     staleTime: 10000,
     watch: true,
-    token: isFundingMatchingPool ? void 0 : USDC_ADDRESS,
+    token: isFundingMatchingPool ? void 0 : DAI_ADDRESS,
   });
   const {
     areTransactionsLoading,
@@ -147,9 +147,9 @@ export default function EditStream(props: EditStreamProps) {
       : isFundingMatchingPool
       ? 1
       : 2;
-  const superTokenSymbol = isFundingMatchingPool ? "ETHx" : "USDCx";
-  const superTokenIcon = isFundingMatchingPool ? ETHLogo : USDCLogo;
-  const underlyingTokenName = isFundingMatchingPool ? "ETH" : "USDC";
+  const superTokenSymbol = isFundingMatchingPool ? "ETHx" : "DAIx";
+  const superTokenIcon = isFundingMatchingPool ? ETHLogo : DAILogo;
+  const underlyingTokenName = isFundingMatchingPool ? "ETH" : "DAI";
 
   useEffect(() => {
     (async () => {
@@ -859,8 +859,8 @@ export default function EditStream(props: EditStreamProps) {
                 <Stack direction="horizontal" gap={1} className="w-50 ms-1 p-2">
                   <Image
                     src={superTokenIcon}
-                    alt={isFundingMatchingPool ? "eth" : "usdc"}
-                    width={isFundingMatchingPool ? 16 : 32}
+                    alt={isFundingMatchingPool ? "eth" : "dai"}
+                    width={isFundingMatchingPool ? 16 : 22}
                   />
                   <Badge className="bg-aqua w-100 ps-2 pe-2 py-2 fs-4 text-start">
                     {convertStreamValueToInterval(

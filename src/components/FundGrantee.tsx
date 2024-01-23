@@ -16,7 +16,7 @@ import {
   AllocationData,
   MatchingData,
 } from "./StreamingQuadraticFunding";
-import { USDCX_ADDRESS } from "../lib/constants";
+import { DAIX_ADDRESS } from "../lib/constants";
 
 export type FundGranteeProps = {
   setTransactionPanelState: React.Dispatch<
@@ -45,7 +45,7 @@ export default function FundGrantee(props: FundGranteeProps) {
   const { address } = useAccount();
   const { data: walletClient } = useWalletClient();
   const { alloStrategy } = useAllo();
-  const { superToken, getFlow } = useSuperfluid(USDCX_ADDRESS, address);
+  const { superToken, getFlow } = useSuperfluid(DAIX_ADDRESS, address);
 
   const updateFlowRateToReceiver = useCallback(async () => {
     if (!address || !superToken) {

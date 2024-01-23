@@ -18,8 +18,8 @@ import FundingSources from "./FundingSources";
 import Grantees from "./Grantees";
 import ethLight from "../assets/eth-light.svg";
 import ethDark from "../assets/eth-dark.svg";
-import usdcLight from "../assets/usdc-light.svg";
-import usdcDark from "../assets/usdc-dark.svg";
+import daiLight from "../assets/dai-light.svg";
+import daiDark from "../assets/dai-dark.svg";
 import {
   TransactionPanelState,
   Grantee,
@@ -82,7 +82,7 @@ enum Source {
 }
 
 enum Token {
-  USDC,
+  DAI,
   ETH,
 }
 
@@ -115,15 +115,15 @@ export default function Visualization(props: VisualizationProps) {
     matchingData,
   } = props;
 
-  const [datasetUsdc, setDatasetUsdc] = useState<Dataset[] | null>(null);
+  const [datasetDai, setDatasetDai] = useState<Dataset[] | null>(null);
   const [datasetEth, setDatasetEth] = useState<Dataset[] | null>(null);
   const [timerSymbolsEth, setTimerSymbolsEth] = useState<Timer | null>(null);
-  const [timerSymbolsUsdc, setTimerSymbolsUsdc] = useState<Timer | null>(null);
+  const [timerSymbolsDai, setTimerSymbolsDai] = useState<Timer | null>(null);
   const [timerUpdateSymbols, setTimerUpdateSymbols] = useState<Timer | null>(
     null
   );
   const [timerStarted, setTimerStarted] = useState<number>();
-  const [symbolsPerSecondUsdc, setSymbolsPerSecondUsdc] = useState(0);
+  const [symbolsPerSecondDai, setSymbolsPerSecondDai] = useState(0);
   const [symbolsPerSecondEth, setSymbolsPerSecondEth] = useState(0);
 
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -200,7 +200,7 @@ export default function Visualization(props: VisualizationProps) {
   }, [transactionPanelState.show]);
 
   useEffect(() => {
-    let _timerSymbolsUsdc: Timer | null = null;
+    let _timerSymbolsDai: Timer | null = null;
     let _timerSymbolsEth: Timer | null = null;
     let _timerUpdateSymbols: Timer | null = null;
 
@@ -213,17 +213,17 @@ export default function Visualization(props: VisualizationProps) {
       ) - flowRateUserAllocation;
     const flowRateMatching = calcTotalFlowRate([matchingData.flowRate]);
 
-    const totalUsdc = flowRateUserAllocation + flowRateDirectAllocation;
-    const datasetUsdc: Dataset[] = [
+    const totalDai = flowRateUserAllocation + flowRateDirectAllocation;
+    const datasetDai: Dataset[] = [
       {
-        token: Token.USDC,
+        token: Token.DAI,
         source: Source.YOU,
-        weight: flowRateUserAllocation / totalUsdc,
+        weight: flowRateUserAllocation / totalDai,
       },
       {
-        token: Token.USDC,
+        token: Token.DAI,
         source: Source.DIRECT,
-        weight: flowRateDirectAllocation / totalUsdc,
+        weight: flowRateDirectAllocation / totalDai,
       },
     ];
     const datasetEth: Dataset[] = [
@@ -244,7 +244,7 @@ export default function Visualization(props: VisualizationProps) {
         Number(formatEther(BigInt(userAllocationData[i].flowRate))) /
         flowRateUserAllocation;
 
-      datasetUsdc[0][poolYou[i].name] = weight;
+      datasetDai[0][poolYou[i].name] = weight;
     }
 
     for (const i in directAllocationData) {
@@ -256,7 +256,7 @@ export default function Visualization(props: VisualizationProps) {
           )
         ) / flowRateDirectAllocation;
 
-      datasetUsdc[1][poolDirect[i].name] = weight;
+      datasetDai[1][poolDirect[i].name] = weight;
     }
 
     let totalUserImpact = 0;
@@ -288,13 +288,13 @@ export default function Visualization(props: VisualizationProps) {
     datasetEth[1].weight =
       (flowRateMatching - totalUserImpact) / flowRateMatching;
 
-    const symbolsPerSecondUsdc = amountToSymbolsPerSecond(totalUsdc);
+    const symbolsPerSecondDai = amountToSymbolsPerSecond(totalDai);
     const symbolsPerSecondEth = amountToSymbolsPerSecond(flowRateMatching);
 
-    if (timerSymbolsUsdc && timerSymbolsEth && timerUpdateSymbols) {
-      timerSymbolsUsdc.restart(
-        (elapsed) => enterSymbol(elapsed, datasetUsdc, Token.USDC),
-        MS_PER_SECOND / symbolsPerSecondUsdc,
+    if (timerSymbolsDai && timerSymbolsEth && timerUpdateSymbols) {
+      timerSymbolsDai.restart(
+        (elapsed) => enterSymbol(elapsed, datasetDai, Token.DAI),
+        MS_PER_SECOND / symbolsPerSecondDai,
         timerStarted
       );
       timerSymbolsEth.restart(
@@ -308,9 +308,9 @@ export default function Visualization(props: VisualizationProps) {
         timerStarted
       );
     } else {
-      _timerSymbolsUsdc = interval(
-        (elapsed) => enterSymbol(elapsed, datasetUsdc, Token.USDC),
-        MS_PER_SECOND / symbolsPerSecondUsdc
+      _timerSymbolsDai = interval(
+        (elapsed) => enterSymbol(elapsed, datasetDai, Token.DAI),
+        MS_PER_SECOND / symbolsPerSecondDai
       );
       _timerSymbolsEth = interval(
         (elapsed) => enterSymbol(elapsed, datasetEth, Token.ETH),
@@ -320,18 +320,18 @@ export default function Visualization(props: VisualizationProps) {
 
       setTimerStarted(now());
       setTimerUpdateSymbols(_timerUpdateSymbols);
-      setTimerSymbolsUsdc(_timerSymbolsUsdc);
+      setTimerSymbolsDai(_timerSymbolsDai);
       setTimerSymbolsEth(_timerSymbolsEth);
     }
 
-    setDatasetUsdc(datasetUsdc);
+    setDatasetDai(datasetDai);
     setDatasetEth(datasetEth);
-    setSymbolsPerSecondUsdc(symbolsPerSecondUsdc);
+    setSymbolsPerSecondDai(symbolsPerSecondDai);
     setSymbolsPerSecondEth(symbolsPerSecondEth);
 
     return () => {
-      if (_timerSymbolsUsdc) {
-        _timerSymbolsUsdc.stop();
+      if (_timerSymbolsDai) {
+        _timerSymbolsDai.stop();
       }
 
       if (_timerSymbolsEth) {
@@ -362,9 +362,9 @@ export default function Visualization(props: VisualizationProps) {
       dataset.map((d: any) => d.weight)
     );
     const source =
-      token === Token.USDC && pick.source === Source.YOU
+      token === Token.DAI && pick.source === Source.YOU
         ? Source.YOU
-        : token === Token.USDC
+        : token === Token.DAI
         ? Source.DIRECT
         : Source.MATCHING;
     const weights = grantees.map((grantee: string) => pick[grantee]);
@@ -387,8 +387,8 @@ export default function Visualization(props: VisualizationProps) {
   const updateSymbols = (elapsed: number) => {
     const xProgressAccessor = (symbol: Symbol) =>
       (elapsed - symbol.startTime) / VIZ_ANIMATION_DURATION;
-    const symbolsUsdc = symbolsGroup.current.selectAll(".usdc-symbol").data(
-      symbols.filter((d) => xProgressAccessor(d) < 1 && d.token === Token.USDC),
+    const symbolsDai = symbolsGroup.current.selectAll(".dai-symbol").data(
+      symbols.filter((d) => xProgressAccessor(d) < 1 && d.token === Token.DAI),
       (symbol: Symbol) => symbol.id
     );
     const symbolsEth = symbolsGroup.current.selectAll(".eth-symbol").data(
@@ -396,7 +396,7 @@ export default function Visualization(props: VisualizationProps) {
       (symbol: Symbol) => symbol.id
     );
 
-    symbolsUsdc.exit().remove();
+    symbolsDai.exit().remove();
     symbolsEth.exit().remove();
 
     selectAll(".symbol")
@@ -421,7 +421,7 @@ export default function Visualization(props: VisualizationProps) {
 
     const symbol = symbols[symbols.length - 1];
     const entries = symbolsGroup.current
-      .selectAll(token === Token.USDC ? ".usdc-symbol" : ".eth-symbol")
+      .selectAll(token === Token.DAI ? ".dai-symbol" : ".eth-symbol")
       .data(
         symbols.filter((d: any) => d.token === token),
         (d: any) => d.id
@@ -432,14 +432,14 @@ export default function Visualization(props: VisualizationProps) {
       .append("svg:image")
       .attr(
         "class",
-        `symbol ${token === Token.USDC ? "usdc-symbol" : "eth-symbol"}`
+        `symbol ${token === Token.DAI ? "dai-symbol" : "eth-symbol"}`
       )
       .attr(
         "xlink:href",
-        token === Token.USDC && symbol.source === Source.YOU
-          ? usdcLight
-          : token === Token.USDC
-          ? usdcDark
+        token === Token.DAI && symbol.source === Source.YOU
+          ? daiLight
+          : token === Token.DAI
+          ? daiDark
           : symbol.you
           ? ethLight
           : ethDark
@@ -520,12 +520,12 @@ export default function Visualization(props: VisualizationProps) {
         <FundingSources
           dimensions={dimensions}
           startYScale={startYScale}
-          symbolsPerSecondAllocation={symbolsPerSecondUsdc}
+          symbolsPerSecondAllocation={symbolsPerSecondDai}
           symbolsPerSecondMatching={symbolsPerSecondEth}
           {...props}
         />
         <svg width={dimensions.width} height={dimensions.height} ref={svgRef} />
-        {datasetUsdc && datasetEth && (
+        {datasetDai && datasetEth && (
           <Grantees
             dimensions={dimensions}
             endYScale={endYScale}

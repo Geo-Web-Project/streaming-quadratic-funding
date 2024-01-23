@@ -8,7 +8,7 @@ import {
   AllocationData,
   MatchingData,
 } from "../components/StreamingQuadraticFunding";
-import { USDCX_ADDRESS, GDA_CONTRACT_ADDRESS } from "../lib/constants";
+import { DAIX_ADDRESS, GDA_CONTRACT_ADDRESS } from "../lib/constants";
 
 type PoolMemberQueryResult = {
   account: { id: Address };
@@ -81,7 +81,7 @@ export default function useRoundQuery(userAddress?: Address) {
   const { data: userAllocationQueryResult } = useQuery(USER_ALLOCATION_QUERY, {
     variables: {
       address: userAddress?.toLowerCase() ?? "",
-      token: USDCX_ADDRESS.toLowerCase(),
+      token: DAIX_ADDRESS.toLowerCase(),
     },
     pollInterval: 10000,
   });

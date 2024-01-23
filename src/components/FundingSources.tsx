@@ -4,7 +4,7 @@ import Card from "react-bootstrap/Card";
 import Badge from "react-bootstrap/Badge";
 import Button from "react-bootstrap/Button";
 import Image from "react-bootstrap/Image";
-import usdcWhite from "../assets/usdc-white.svg";
+import daiWhite from "../assets/dai-white.svg";
 import ethWhite from "../assets/eth-white.svg";
 import hand from "../assets/hand.svg";
 import { VisualizationProps, Dimensions } from "./Visualization";
@@ -100,7 +100,7 @@ export default function FundingSources(props: FundingSourcesProps) {
         <Card.Header className="p-0 border-0 fs-4">You</Card.Header>
         <Card.Body className="d-flex flex-column justify-content-center gap-1 p-0 pb-1 fs-6">
           <Stack direction="horizontal" gap={1} className="align-items-center">
-            <Image src={usdcWhite} alt="usdc" width={16} />
+            <Image src={daiWhite} alt="dai" width={14} />
             <Badge
               className="w-75 m-0 rounded-1 px-1 bg-aqua fs-6 text-white fw-normal text-start"
               style={{
@@ -116,7 +116,7 @@ export default function FundingSources(props: FundingSourcesProps) {
             <Card.Text className="w-25 m-0">/month</Card.Text>
           </Stack>
           <Stack direction="horizontal" gap={1} className="align-items-center">
-            <Image src={usdcWhite} alt="usdc" width={16} />
+            <Image src={daiWhite} alt="dai" width={14} />
             <Badge
               className="w-75 m-0 rounded-1 px-1 bg-aqua fs-6 text-white text-start fw-normal"
               style={{
@@ -140,7 +140,7 @@ export default function FundingSources(props: FundingSourcesProps) {
         <Card.Header className="p-0 border-0 fs-4">Direct Funders</Card.Header>
         <Card.Body className="d-flex flex-column justify-content-center gap-1 p-0 fs-6">
           <Stack direction="horizontal" gap={1} className="align-items-center">
-            <Image src={usdcWhite} alt="usdc" width={16} />
+            <Image src={daiWhite} alt="dai" width={14} />
             <Badge
               className="w-75 m-0 rounded-1 px-1 bg-secondary fs-6 text-white fw-normal text-start"
               style={{
@@ -156,7 +156,7 @@ export default function FundingSources(props: FundingSourcesProps) {
             <Card.Text className="w-25 m-0">/month</Card.Text>
           </Stack>
           <Stack direction="horizontal" gap={1} className="align-items-center">
-            <Image src={usdcWhite} alt="usdc" width={16} />
+            <Image src={daiWhite} alt="dai" width={14} />
             <Badge
               className="w-75 m-0 rounded-1 px-1 bg-secondary fs-6 text-start fw-normal text-white"
               style={{
@@ -201,7 +201,7 @@ export default function FundingSources(props: FundingSourcesProps) {
                 gap={1}
                 className="align-items-center"
               >
-                <Image src={ethWhite} alt="usdc" width={8} />
+                <Image src={ethWhite} alt="eth" width={8} />
                 <Badge
                   className="w-75 m-0 rounded-1 px-1 bg-slate fs-6 text-start fw-normal text-white"
                   style={{
@@ -220,7 +220,7 @@ export default function FundingSources(props: FundingSourcesProps) {
                 gap={1}
                 className="align-items-center"
               >
-                <Image src={ethWhite} alt="usdc" width={8} className="py-1" />
+                <Image src={ethWhite} alt="eth" width={8} className="py-1" />
                 <Badge
                   className="w-75 m-0 rounded-1 px-1 bg-slate fs-6 text-start fw-normal text-white"
                   style={{
@@ -255,8 +255,8 @@ export default function FundingSources(props: FundingSourcesProps) {
           <Stack direction="horizontal">
             <Card.Img
               variant="start"
-              src={usdcWhite}
-              width={30}
+              src={daiWhite}
+              width={22}
               className="pe-1"
             />
             <Card.Text className="mb-0 me-3">
@@ -269,7 +269,7 @@ export default function FundingSources(props: FundingSourcesProps) {
                     .toFixed(8)
                     .replace(/\.?0+$/, "")
                 : 0}{" "}
-              USDCx
+              DAIx
             </Card.Text>
           </Stack>
           <Stack direction="horizontal">

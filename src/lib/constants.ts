@@ -6,8 +6,8 @@ export const IPFS_GATEWAY = "https://gateway.ipfs.io/ipfs";
 export const WALLET_CONNECT_PROJECT_ID = import.meta.env
   .VITE_WALLET_CONNECT_PROJECT_ID;
 export const ALCHEMY_ID = import.meta.env.VITE_ALCHEMY_ID;
-export const USDCX_ADDRESS = import.meta.env.VITE_USDCX_ADDRESS;
-export const USDC_ADDRESS = import.meta.env.VITE_USDC_ADDRESS;
+export const DAIX_ADDRESS = import.meta.env.VITE_DAIX_ADDRESS;
+export const DAI_ADDRESS = import.meta.env.VITE_DAI_ADDRESS;
 export const ETHX_ADDRESS = import.meta.env.VITE_ETHX_ADDRESS;
 export const ALLO_CONTRACT_ADDRESS = import.meta.env.VITE_ALLO_CONTRACT_ADDRESS;
 export const SUPERFLUID_HOST_ADDRESS = import.meta.env
