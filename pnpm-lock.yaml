@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   '@allo-team/allo-v2-sdk':
-    specifier: ^1.0.34
-    version: 1.0.34(typescript@5.0.4)
+    specifier: ^1.0.39
+    version: 1.0.39(typescript@5.0.4)
   '@apollo/client':
     specifier: ^3.8.9
     version: 3.8.9(graphql@16.8.1)(react-dom@18.2.0)(react@18.2.0)
@@ -112,8 +112,8 @@ packages:
     resolution: {integrity: sha512-nA9XHtlAkYfJxY7bce8DcN7eKxWWCWkU+1GR9d+U6MbNpfwQp8TI7vqOsBsMcHoT4mBu2kypKoSKnghEzOOq5Q==}
     dev: false
 
-  /@allo-team/allo-v2-sdk@1.0.34(typescript@5.0.4):
-    resolution: {integrity: sha512-3rRRZQqyGsii5bro2JkshfVq38JQ1NfXx7naDu6ggI0uu2ssPtNDZYqLhFW3+FYjw8+RgVP06iZAd+3ol2gOfQ==}
+  /@allo-team/allo-v2-sdk@1.0.39(typescript@5.0.4):
+    resolution: {integrity: sha512-t6mxj/sGOuQjb95hvsqKBT6SADyEbgCfXiIFlVmuft95In6YbeRKyzNEx2OZKrNZA9vze3vEkCIx8v0wVtplOA==}
     dependencies:
       dotenv: 16.3.1
       events: 3.3.0

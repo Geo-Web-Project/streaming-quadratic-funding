@@ -1,12 +1,16 @@
 import { useEffect, useState, createContext, useContext } from "react";
 import { Address } from "viem";
-import { useNetwork, usePublicClient } from "wagmi";
-import { optimismGoerli } from "wagmi/chains";
+import { usePublicClient } from "wagmi";
+import { optimism, optimismSepolia } from "wagmi/chains";
 import { SQFSuperFluidStrategy } from "@allo-team/allo-v2-sdk/";
 import { recipientIds } from "../lib/recipientIds";
 import { sqfStrategyAbi } from "../lib/abi/sqfStrategy";
 import { getGatewayUrl } from "../lib/utils";
-import { SQF_STRATEGY_ADDRESS, ALLO_POOL_ID } from "../lib/constants";
+import {
+  RPC_URLS_HTTP,
+  SQF_STRATEGY_ADDRESS,
+  ALLO_POOL_ID,
+} from "../lib/constants";
 
 export type Recipient = {
   useRegistryAnchor: boolean;
@@ -77,12 +81,13 @@ export function AlloContextProvider({
     useState<PassportDecoder | null>(null);
   const [gdaPool, setGdaPool] = useState<Address | null>(null);
 
-  const { chain } = useNetwork();
   const publicClient = usePublicClient();
+  const chainId =
+    import.meta.env.MODE === "mainnet" ? optimism.id : optimismSepolia.id;
 
   const alloStrategy = new SQFSuperFluidStrategy({
-    chain: chain?.id ?? optimismGoerli.id,
-    rpc: publicClient.chain.rpcUrls.default.http[0],
+    chain: chainId,
+    rpc: RPC_URLS_HTTP[chainId],
     address: SQF_STRATEGY_ADDRESS,
     poolId: ALLO_POOL_ID,
   });

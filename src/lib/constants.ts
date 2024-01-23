@@ -12,6 +12,12 @@ export const ETHX_ADDRESS = import.meta.env.VITE_ETHX_ADDRESS;
 export const ALLO_CONTRACT_ADDRESS = import.meta.env.VITE_ALLO_CONTRACT_ADDRESS;
 export const SUPERFLUID_HOST_ADDRESS = import.meta.env
   .VITE_SUPERFLUID_HOST_ADDRESS;
+export const SUPERFLUID_RESOLVER_ADDRESS = import.meta.env
+  .VITE_SUPERFLUID_RESOLVER_ADDRESS;
 export const GDA_CONTRACT_ADDRESS = import.meta.env.VITE_GDA_CONTRACT_ADDRESS;
 export const SQF_STRATEGY_ADDRESS = import.meta.env.VITE_SQF_STRATEGY_ADDRESS;
 export const ALLO_POOL_ID = import.meta.env.VITE_ALLO_POOL_ID;
+export const RPC_URLS_HTTP: Record<number, string> = {
+  10: `https://opt-mainnet.g.alchemy.com/v2/${ALCHEMY_ID}`,
+  11155420: `https://opt-sepolia.g.alchemy.com/v2/${ALCHEMY_ID}`,
+};

@@ -4,19 +4,25 @@ import {
   darkTheme,
 } from "@rainbow-me/rainbowkit";
 import { configureChains, createConfig, WagmiConfig } from "wagmi";
-import { optimism, optimismGoerli } from "wagmi/chains";
-import { alchemyProvider } from "wagmi/providers/alchemy";
+import { optimism, optimismSepolia } from "wagmi/chains";
+import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
 import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client";
 import Layout from "./components/Layout";
 import StreamingQuadraticFunding from "./components/StreamingQuadraticFunding";
 import { AlloContextProvider } from "./context/Allo";
-import { ALCHEMY_ID, WALLET_CONNECT_PROJECT_ID } from "./lib/constants";
+import { RPC_URLS_HTTP, WALLET_CONNECT_PROJECT_ID } from "./lib/constants";
 import "@rainbow-me/rainbowkit/styles.css";
 import "./App.scss";
 
 const { chains, publicClient } = configureChains(
-  [import.meta.env.MODE === "mainnet" ? optimism : optimismGoerli],
-  [alchemyProvider({ apiKey: ALCHEMY_ID })]
+  [import.meta.env.MODE === "mainnet" ? optimism : optimismSepolia],
+  [
+    jsonRpcProvider({
+      rpc: (chain) => ({
+        http: RPC_URLS_HTTP[chain.id],
+      }),
+    }),
+  ]
 );
 
 const { connectors } = getDefaultWallets({
@@ -32,10 +38,10 @@ const wagmiConfig = createConfig({
 });
 
 const apolloClient = new ApolloClient({
-  uri: `https://api.thegraph.com/subgraphs/name/superfluid-finance/protocol-v1-optimism-${
-    import.meta.env.MODE === "mainnet" ? "mainnet" : "goerli"
-  }`,
-
+  uri:
+    import.meta.env.MODE === "mainnet"
+      ? "https://api.thegraph.com/subgraphs/name/superfluid-finance/protocol-v1-optimism-mainnet"
+      : "https://optimism-sepolia.subgraph.x.superfluid.dev",
   cache: new InMemoryCache(),
 });
 

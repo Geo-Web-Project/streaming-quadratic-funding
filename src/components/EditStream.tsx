@@ -119,6 +119,7 @@ export default function EditStream(props: EditStreamProps) {
     address,
     cacheTime: 10000,
     staleTime: 10000,
+    watch: true,
     token: isFundingMatchingPool ? void 0 : USDC_ADDRESS,
   });
   const {
@@ -313,7 +314,7 @@ export default function EditStream(props: EditStreamProps) {
             <Stack direction="horizontal" gap={2}>
               <Badge className="d-flex align-items-center gap-1 bg-purple w-50 rounded-3 px-3 py-2 fs-4 fw-normal">
                 <Image src={OpLogo} alt="optimism" width={18} />
-                {chain?.id === 420 ? "OP Goerli" : "OP Mainnet"}
+                {chain?.id === 10 ? "OP Mainnet" : "OP Sepolia"}
               </Badge>
               <Badge className="d-flex align-items-center gap-1 bg-purple w-50 rounded-3 px-3 py-2 fs-4 fw-normal">
                 <Image

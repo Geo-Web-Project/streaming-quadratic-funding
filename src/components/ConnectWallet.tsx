@@ -1,6 +1,5 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Button from "react-bootstrap/Button";
-import Image from "react-bootstrap/Image";
 
 export default function ConnectWallet() {
   return (
@@ -48,20 +47,7 @@ export default function ConnectWallet() {
                 <div className="d-flex align-items-center">
                   <Button
                     variant="purple"
-                    onClick={openChainModal}
-                    className="d-flex align-items-center rounded-3 rounded-end-0 p-2"
-                  >
-                    {chain.iconUrl && (
-                      <Image
-                        alt={chain.name ?? "Chain icon"}
-                        src={chain.iconUrl}
-                        width={24}
-                      />
-                    )}
-                  </Button>
-                  <Button
-                    variant="purple"
-                    className="rounded-3 rounded-start-0 p-2"
+                    className="rounded-4 px-3 py-2"
                     onClick={openAccountModal}
                   >
                     {account.displayName}

@@ -13,6 +13,7 @@ import useAllo from "./allo";
 import { gdaAbi } from "../lib/abi/gda";
 import {
   SUPERFLUID_HOST_ADDRESS,
+  SUPERFLUID_RESOLVER_ADDRESS,
   USDCX_ADDRESS,
   GDA_CONTRACT_ADDRESS,
 } from "../lib/constants";
@@ -49,6 +50,7 @@ export default function useSuperfluid(
 
       const sfFramework = await Framework.create({
         chainId: chain.id,
+        resolverAddress: SUPERFLUID_RESOLVER_ADDRESS,
         provider,
       });
 
