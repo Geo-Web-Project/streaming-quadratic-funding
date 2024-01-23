@@ -27,7 +27,7 @@ export type Metadata = {
   pointer: string;
 };
 
-type RecipientsDetails = {
+export type RecipientDetails = {
   name: string;
   description: string;
   image: string;
@@ -53,7 +53,7 @@ type PassportDecoder = {
 export const AlloContext = createContext<{
   alloStrategy: SQFSuperFluidStrategy;
   recipients: Recipient[] | null;
-  recipientsDetails: RecipientsDetails[] | null;
+  recipientsDetails: RecipientDetails[] | null;
   passportDecoder: PassportDecoder | null;
   gdaPool: Address | null;
 } | null>(null);
@@ -75,7 +75,7 @@ export function AlloContextProvider({
 }) {
   const [recipients, setRecipients] = useState<Recipient[] | null>(null);
   const [recipientsDetails, setRecipientsDetails] = useState<
-    RecipientsDetails[] | null
+    RecipientDetails[] | null
   >(null);
   const [passportDecoder, setPassportDecoder] =
     useState<PassportDecoder | null>(null);

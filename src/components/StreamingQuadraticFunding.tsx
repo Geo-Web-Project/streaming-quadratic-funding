@@ -8,14 +8,10 @@ import Spinner from "react-bootstrap/Spinner";
 import FundMatchingPool from "./FundMatchingPool";
 import Visualization from "./Visualization";
 import FundGrantee from "./FundGrantee";
-import SQFIcon from "../assets/sqf.png";
 import useAllo from "../hooks/allo";
 import useRoundQuery from "../hooks/roundQuery";
 import { recipientIds } from "../lib/recipientIds";
 import { clampText } from "../lib/utils";
-import poolYou from "../lib/pool-you.json";
-import poolDirect from "../lib/pool-direct.json";
-import poolMatching from "../lib/pool-matching.json";
 
 export type AllocationData = {
   flowRate: `${number}`;
@@ -104,9 +100,7 @@ export default function StreamingQuadraticFunding() {
           <Visualization
             transactionPanelState={transactionPanelState}
             setTransactionPanelState={setTransactionPanelState}
-            poolYou={poolYou}
-            poolDirect={poolDirect}
-            poolMatching={poolMatching}
+            recipientsDetails={recipientsDetails}
             userAllocationData={userAllocationData}
             directAllocationData={directAllocationData}
             matchingData={matchingData}
@@ -121,10 +115,18 @@ export default function StreamingQuadraticFunding() {
                 matchingData={matchingData}
                 granteeIndex={transactionPanelState.granteeIndex}
                 setTransactionPanelState={setTransactionPanelState}
-                name={poolDirect[transactionPanelState.granteeIndex].name}
-                image={SQFIcon}
-                website="https://geoweb.network"
-                social="https://twitter.com/thegeoweb"
+                name={
+                  recipientsDetails[transactionPanelState.granteeIndex].name
+                }
+                image={
+                  recipientsDetails[transactionPanelState.granteeIndex].image
+                }
+                website={
+                  recipientsDetails[transactionPanelState.granteeIndex].website
+                }
+                social={
+                  recipientsDetails[transactionPanelState.granteeIndex].social
+                }
                 recipientId={recipientIds[transactionPanelState.granteeIndex]}
                 granteeAddress={
                   recipients[transactionPanelState.granteeIndex].superApp
@@ -132,7 +134,7 @@ export default function StreamingQuadraticFunding() {
                 description={
                   <>
                     {clampText(
-                      poolDirect[transactionPanelState.granteeIndex]
+                      recipientsDetails[transactionPanelState.granteeIndex]
                         .description,
                       280
                     )}

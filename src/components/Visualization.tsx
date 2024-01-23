@@ -22,10 +22,10 @@ import daiLight from "../assets/dai-light.svg";
 import daiDark from "../assets/dai-dark.svg";
 import {
   TransactionPanelState,
-  Grantee,
   AllocationData,
   MatchingData,
 } from "./StreamingQuadraticFunding";
+import { RecipientDetails } from "../context/Allo";
 import { weightedPick, getRandomNumberInRange, sqrtBigInt } from "../lib/utils";
 import {
   MS_PER_SECOND,
@@ -39,9 +39,7 @@ export interface VisualizationProps {
   setTransactionPanelState: React.Dispatch<
     React.SetStateAction<TransactionPanelState>
   >;
-  poolYou: Grantee[];
-  poolDirect: Grantee[];
-  poolMatching: Grantee[];
+  recipientsDetails: RecipientDetails[];
   userAllocationData: AllocationData[];
   directAllocationData: AllocationData[];
   matchingData: MatchingData;
@@ -91,15 +89,6 @@ const MIN_SYMBOLS_PER_SECOND = 20;
 const MAX_SYMBOLS_PER_SECOND = 60;
 const symbols: Symbol[] = [];
 const sources = ["you", "direct", "matching"];
-const grantees = [
-  "Gov4Git",
-  "Open Source Observer",
-  "Avelous Hacking",
-  "OpSci",
-  "OpenCann",
-  "Blockscout",
-];
-const granteeIndexes = range(grantees.length);
 const sourceIndexes = range(sources.length);
 
 let lastSymbolId = 0;
@@ -107,9 +96,7 @@ let lastSymbolId = 0;
 export default function Visualization(props: VisualizationProps) {
   const {
     transactionPanelState,
-    poolYou,
-    poolDirect,
-    poolMatching,
+    recipientsDetails,
     userAllocationData,
     directAllocationData,
     matchingData,
@@ -126,6 +113,7 @@ export default function Visualization(props: VisualizationProps) {
   const [symbolsPerSecondDai, setSymbolsPerSecondDai] = useState(0);
   const [symbolsPerSecondEth, setSymbolsPerSecondEth] = useState(0);
 
+  const granteeIndexes = range(recipientsDetails.length);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const symbolsGroup = useRef<any>();
 
@@ -244,7 +232,7 @@ export default function Visualization(props: VisualizationProps) {
         Number(formatEther(BigInt(userAllocationData[i].flowRate))) /
         flowRateUserAllocation;
 
-      datasetDai[0][poolYou[i].name] = weight;
+      datasetDai[0][i] = weight;
     }
 
     for (const i in directAllocationData) {
@@ -256,7 +244,7 @@ export default function Visualization(props: VisualizationProps) {
           )
         ) / flowRateDirectAllocation;
 
-      datasetDai[1][poolDirect[i].name] = weight;
+      datasetDai[1][i] = weight;
     }
 
     let totalUserImpact = 0;
@@ -279,8 +267,8 @@ export default function Visualization(props: VisualizationProps) {
           userImpact) /
         flowRateMatching;
 
-      datasetEth[0][poolYou[i].name] = userWeight;
-      datasetEth[1][poolDirect[i].name] = directWeight;
+      datasetEth[0][i] = userWeight;
+      datasetEth[1][i] = directWeight;
       totalUserImpact += userImpact;
     }
 
@@ -343,9 +331,6 @@ export default function Visualization(props: VisualizationProps) {
       }
     };
   }, [
-    poolYou,
-    poolDirect,
-    poolMatching,
     directAllocationData,
     userAllocationData,
     matchingData,
@@ -367,7 +352,9 @@ export default function Visualization(props: VisualizationProps) {
         : token === Token.DAI
         ? Source.DIRECT
         : Source.MATCHING;
-    const weights = grantees.map((grantee: string) => pick[grantee]);
+    const weights = recipientsDetails.map(
+      (_: RecipientDetails, i: number) => pick[i]
+    );
     const grantee = weightedPick(granteeIndexes, weights);
     const symbol = {
       id: lastSymbolId,
@@ -527,10 +514,12 @@ export default function Visualization(props: VisualizationProps) {
         <svg width={dimensions.width} height={dimensions.height} ref={svgRef} />
         {datasetDai && datasetEth && (
           <Grantees
+            grantees={recipientsDetails.map((details) => details.name)}
             dimensions={dimensions}
             endYScale={endYScale}
-            grantees={grantees}
-            descriptions={poolDirect.map((elem) => elem.description ?? "")}
+            descriptions={recipientsDetails.map(
+              (elem) => elem.description ?? ""
+            )}
             {...props}
           />
         )}

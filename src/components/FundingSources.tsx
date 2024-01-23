@@ -256,7 +256,7 @@ export default function FundingSources(props: FundingSourcesProps) {
             <Card.Img
               variant="start"
               src={daiWhite}
-              width={22}
+              width={24}
               className="pe-1"
             />
             <Card.Text className="mb-0 me-3">
