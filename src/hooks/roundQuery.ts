@@ -67,6 +67,8 @@ const GDA_POOL_QUERY = gql`
           id
         }
         flowRate
+        totalAmountFlowedDistributedUntilUpdatedAt
+        updatedAtTimestamp
       }
     }
   }

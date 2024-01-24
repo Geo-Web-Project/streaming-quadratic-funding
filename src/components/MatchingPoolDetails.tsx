@@ -1,4 +1,6 @@
+import { useMemo } from "react";
 import { useAccount } from "wagmi";
+import { formatEther } from "viem";
 import Stack from "react-bootstrap/Stack";
 import Card from "react-bootstrap/Card";
 import Button from "react-bootstrap/Button";
@@ -8,6 +10,8 @@ import Spinner from "react-bootstrap/Spinner";
 import XLogo from "../assets/x-logo.svg";
 import WebIcon from "../assets/web.svg";
 import SQFIcon from "../assets/sqf.png";
+import useRoundQuery from "../hooks/roundQuery";
+import useFlowingAmount from "../hooks/flowingAmount";
 import {
   TimeInterval,
   unitOfTime,
@@ -23,6 +27,42 @@ export default function MatchingPoolDetails(props: MatchingPoolDetailsProps) {
   const { flowRateToReceiver } = props;
 
   const { address } = useAccount();
+  const { matchingData } = useRoundQuery();
+
+  const userDistributionInfo = useMemo(() => {
+    if (address && matchingData) {
+      const index = matchingData.poolDistributors.findIndex(
+        (distributor) => distributor.account.id === address.toLowerCase()
+      );
+
+      if (index > -1) {
+        return {
+          totalDistributedUserUntilUpdatedAt: BigInt(
+            matchingData.poolDistributors[index]
+              .totalAmountFlowedDistributedUntilUpdatedAt
+          ),
+          updatedAtTimestamp:
+            matchingData.poolDistributors[index].updatedAtTimestamp,
+          flowRate: BigInt(matchingData.poolDistributors[index].flowRate),
+        };
+      }
+    }
+
+    return null;
+  }, [address, matchingData]);
+
+  const totalDistributedUser = useFlowingAmount(
+    userDistributionInfo?.totalDistributedUserUntilUpdatedAt ?? BigInt(0),
+    userDistributionInfo?.updatedAtTimestamp ?? 0,
+    userDistributionInfo?.flowRate ?? BigInt(0)
+  );
+  const totalDistributedAll = useFlowingAmount(
+    BigInt(
+      matchingData?.totalAmountFlowedDistributedUntilUpdatedAt ?? BigInt(0)
+    ),
+    matchingData?.updatedAtTimestamp ?? 0,
+    BigInt(matchingData?.flowRate ?? 0)
+  );
 
   return (
     <Stack direction="vertical" className="bg-blue rounded-4 p-2 pt-0">
@@ -90,15 +130,24 @@ export default function MatchingPoolDetails(props: MatchingPoolDetailsProps) {
       <Stack direction="horizontal" gap={1} className="fs-6 p-2">
         <Stack direction="vertical" gap={1} className="w-33">
           <Card.Text className="m-0 pe-0">You</Card.Text>
-          <Badge className="bg-aqua rounded-1 p-1 text-start">0</Badge>
+          <Badge className="bg-aqua rounded-1 p-1 text-start fs-5 fw-normal">
+            {formatEther(totalDistributedUser).slice(0, 8)}
+          </Badge>
         </Stack>
         <Stack direction="vertical" gap={1} className="w-33">
           <Card.Text className="m-0 pe-0">All</Card.Text>
-          <Badge className="bg-secondary rounded-1 p-1 text-start">0</Badge>
+          <Badge className="bg-secondary rounded-1 p-1 text-start fs-5 fw-normal">
+            {formatEther(totalDistributedAll).slice(0, 8)}
+          </Badge>
         </Stack>
         <Stack direction="vertical" gap={1} className="w-33">
           <Card.Text className="m-0 pe-0">Others</Card.Text>
-          <Badge className="bg-slate rounded-1 p-1 text-start">0</Badge>
+          <Badge className="bg-slate rounded-1 p-1 text-start fs-5 fw-normal">
+            {formatEther(totalDistributedAll - totalDistributedUser).slice(
+              0,
+              8
+            )}
+          </Badge>
         </Stack>
         <Card.Text className="w-20 align-self-end">total funding</Card.Text>
       </Stack>
