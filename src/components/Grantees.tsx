@@ -92,7 +92,7 @@ export default function Grantees(props: GranteesProps) {
                         Number(
                           formatEther(BigInt(userAllocationData[i].flowRate))
                         )
-                      ).toFixed(2)
+                      ).toFixed(6)
                     )
                   : 0}{" "}
               </Badge>
@@ -106,7 +106,7 @@ export default function Grantees(props: GranteesProps) {
                               BigInt(userAllocationData[i].flowRate)
                           )
                         )
-                      ).toFixed(2)
+                      ).toFixed(6)
                     )
                   : 0}{" "}
               </Badge>
@@ -117,7 +117,7 @@ export default function Grantees(props: GranteesProps) {
                         Number(
                           formatEther(BigInt(matchingData.members[i].flowRate))
                         )
-                      ).toFixed(8)
+                      ).toFixed(6)
                     )
                   : 0}{" "}
               </Badge>

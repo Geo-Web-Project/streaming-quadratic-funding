@@ -110,7 +110,7 @@ export default function FundingSources(props: FundingSourcesProps) {
               {parseFloat(
                 perSecondToPerMonth(
                   Number(formatEther(totalFlowRateUser))
-                ).toFixed(2)
+                ).toFixed(6)
               )}
             </Badge>
             <Card.Text className="w-25 m-0">/month</Card.Text>
@@ -123,7 +123,7 @@ export default function FundingSources(props: FundingSourcesProps) {
                 background: "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
               }}
             >
-              {formatEther(totalStreamedUserAllocation)}
+              {formatEther(totalStreamedUserAllocation).slice(0, 8)}
             </Badge>
             <Card.Text className="w-25 m-0"> total</Card.Text>
           </Stack>
@@ -150,7 +150,7 @@ export default function FundingSources(props: FundingSourcesProps) {
               {parseFloat(
                 perSecondToPerMonth(
                   Number(formatEther(totalFlowRateDirect))
-                ).toFixed(2)
+                ).toFixed(6)
               )}
             </Badge>
             <Card.Text className="w-25 m-0">/month</Card.Text>
@@ -163,7 +163,7 @@ export default function FundingSources(props: FundingSourcesProps) {
                 background: "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
               }}
             >
-              {formatEther(totalStreamedDirectAllocation)}{" "}
+              {formatEther(totalStreamedDirectAllocation).slice(0, 8)}{" "}
             </Badge>
             <Card.Text className="w-25 m-0"> total</Card.Text>
           </Stack>
@@ -228,7 +228,7 @@ export default function FundingSources(props: FundingSourcesProps) {
                       "linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25))",
                   }}
                 >
-                  {formatEther(totalStreamedMatching).slice(0, 15)}
+                  {formatEther(totalStreamedMatching).slice(0, 8)}
                 </Badge>
                 <Card.Text className="w-25 m-0">total</Card.Text>
               </Stack>

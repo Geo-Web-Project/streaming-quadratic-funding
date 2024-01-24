@@ -1,6 +1,6 @@
 export const MS_PER_SECOND = 1000;
 export const VIZ_ANIMATION_DURATION = MS_PER_SECOND * 3;
-export const VIZ_CARD_WIDTH_SOURCE = 200;
+export const VIZ_CARD_WIDTH_SOURCE = 220;
 export const VIZ_CARD_WIDTH_GRANTEE = 250;
 export const IPFS_GATEWAY = "https://gateway.ipfs.io/ipfs";
 export const WALLET_CONNECT_PROJECT_ID = import.meta.env

@@ -101,7 +101,7 @@ export default function FundGrantee(props: FundGranteeProps) {
       onHide={closeOffcanvas}
       placement="end"
       backdrop={false}
-      className="w-25 bg-dark px-3 overflow-auto border-0 border-top border-secondary"
+      className="w-25 bg-dark px-3 overflow-auto border-0 border-top border-secondary border-opacity-25"
       style={{ top: 62 }}
     >
       <Stack

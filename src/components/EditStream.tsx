@@ -294,7 +294,9 @@ export default function EditStream(props: EditStreamProps) {
           <Badge
             pill
             as="div"
-            className="d-flex justify-content-center p-0 bg-aqua"
+            className={`d-flex justify-content-center p-0 ${
+              step !== Step.SELECT_AMOUNT ? "bg-info" : "bg-aqua"
+            }`}
             style={{
               width: 20,
               height: 20,
@@ -444,14 +446,22 @@ export default function EditStream(props: EditStreamProps) {
             as="div"
             className={`d-flex justify-content-center p-0
                     ${
-                      step === Step.SELECT_AMOUNT ? "bg-secondary" : "bg-aqua"
+                      step === Step.SELECT_AMOUNT
+                        ? "bg-secondary"
+                        : step === Step.REVIEW ||
+                          step === Step.MINT_PASSPORT ||
+                          step === Step.SUCCESS
+                        ? "bg-info"
+                        : "bg-aqua"
                     }`}
             style={{
               width: 20,
               height: 20,
             }}
           >
-            {step === Step.REVIEW || step === Step.SUCCESS ? (
+            {step === Step.REVIEW ||
+            step === Step.MINT_PASSPORT ||
+            step === Step.SUCCESS ? (
               <Image src={DoneIcon} alt="done" width={16} />
             ) : (
               <Card.Text className="m-auto text-blue">2</Card.Text>
@@ -620,6 +630,8 @@ export default function EditStream(props: EditStreamProps) {
                 step !== Step.REVIEW &&
                 step !== Step.SUCCESS
                   ? "bg-secondary"
+                  : step === Step.REVIEW || step === Step.SUCCESS
+                  ? "bg-info"
                   : "bg-aqua"
               }`}
               style={{
@@ -719,6 +731,8 @@ export default function EditStream(props: EditStreamProps) {
             className={`d-flex justify-content-center p-0 ${
               step !== Step.REVIEW && step !== Step.SUCCESS
                 ? "bg-secondary"
+                : step === Step.SUCCESS
+                ? "bg-info"
                 : "bg-aqua"
             }`}
             style={{
@@ -989,8 +1003,7 @@ export default function EditStream(props: EditStreamProps) {
       {step === Step.SUCCESS && (
         <Card className="bg-blue mt-4 p-4 text-white rounded-4">
           <Card.Text>
-            Donation stream confirmed! Thank you for your ongoing support to
-            public goods.
+            Your donation stream is open. Thank you for supporting public goods!
           </Card.Text>
           <Card.Text
             as="span"
@@ -1005,39 +1018,35 @@ export default function EditStream(props: EditStreamProps) {
           </Card.Text>
           <Stack
             direction="horizontal"
-            className="justify-content-center align-items-end"
+            gap={3}
+            className="justify-content-around align-items-end"
           >
             <Card.Link
-              className="d-flex flex-column twitter-share-button text-decoration-none text-white fs-5 p-2"
+              className="d-flex flex-column align-items-center twitter-share-button text-decoration-none text-white fs-5 m-0 w-33"
               rel="noreferrer"
               target="_blank"
               href={`https://twitter.com/intent/tweet?text=I%20just%20opened%20a%20contribution%20stream%20to%20${granteeName}%20in%20the%20%23streamingquadratic%20funding%20pilot%20presented%20by%20%40thegeoweb%2C%20%40Superfluid_HQ%2C%20%26%20%40gitcoin%3A%0A%0Ahttps%3A%2F%2Fgeoweb.land%2Fgovernance%2F%0A%0AJoin%20me%20in%20making%20public%20goods%20funding%20history%20by%20donating%20in%20the%20world%27s%20first%20SQF%20round%21`}
               data-size="large"
             >
-              <Image src={XIcon} alt="x social" width={24} className="m-auto" />
+              <Image src={XIcon} alt="x social" width={28} />
               Post to X
             </Card.Link>
             <Card.Link
-              className="d-flex flex-column text-decoration-none text-white fs-5 p-2"
+              className="d-flex flex-column align-items-center text-decoration-none text-white fs-5 m-0 w-50"
               rel="noreferrer"
               target="_blank"
               href={`https://warpcast.com/~/compose?text=I+just+opened+a+contribution+stream+to+${granteeName}+in+the+%23streamingquadraticfunding+pilot+round+presented+by+%40geoweb%2C+%40gitcoin%2C+%26+Superfluid%3A+%0A%0Ahttps%3A%2F%2Fgeoweb.land%2Fgovernance%2F+%0A%0AJoin+me+in+making+public+goods+funding+history+by+donating+in+the+world's+first+SQF+round%21`}
             >
-              <Image
-                src={FarcasterIcon}
-                alt="farcaster"
-                width={28}
-                className="m-auto"
-              />
+              <Image src={FarcasterIcon} alt="farcaster" width={28} />
               Cast to Farcaster
             </Card.Link>
             <Card.Link
-              className="d-flex flex-column text-decoration-none text-white fs-5 p-2"
+              className="d-flex flex-column align-items-center text-decoration-none text-white fs-5 m-0 w-33"
               rel="noreferrer"
               target="_blank"
               href={`https://hey.xyz/?text=I+just+opened+a+contribution+stream+to+GRANTEE+in+the+%23streamingquadraticfunding+pilot+round+presented+by+%40geoweb%2C+%40gitcoin%2C+%26+%40superfluid%3A+%0A%0Ahttps%3A%2F%2Fgeoweb.land%2Fgovernance%2F+%0A%0AJoin+me+in+making+public+goods+funding+history+by+donating+in+the+world%27s+first+SQF+round%21`}
             >
-              <Image src={LensIcon} alt="lens" width={32} className="m-auto" />
+              <Image src={LensIcon} alt="lens" width={28} />
               Post on Lens
             </Card.Link>
           </Stack>
