@@ -25,6 +25,7 @@ export type MatchingData = {
   totalAmountFlowedDistributedUntilUpdatedAt: `${number}`;
   updatedAtTimestamp: number;
   members: Member[];
+  poolDistributors: { account: { id: string }; flowRate: `${number}` }[];
 };
 
 export type Member = {

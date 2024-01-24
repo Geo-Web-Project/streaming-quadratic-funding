@@ -56,7 +56,7 @@ interface EditStreamProps {
   granteeName: string;
   granteeIndex: number | null;
   matchingData?: MatchingData;
-  updateFlowRateToReceiver: () => Promise<string>;
+  getFlowRateToReceiver: () => Promise<string>;
   receiver: string;
   flowRateToReceiver: string;
   newFlowRate: string;
@@ -82,7 +82,7 @@ export default function EditStream(props: EditStreamProps) {
     granteeIndex,
     matchingData,
     flowRateToReceiver,
-    updateFlowRateToReceiver,
+    getFlowRateToReceiver,
     newFlowRate,
     setNewFlowRate,
     transactionsToQueue,
@@ -153,7 +153,6 @@ export default function EditStream(props: EditStreamProps) {
 
   useEffect(() => {
     (async () => {
-      const flowRateToReceiver = await updateFlowRateToReceiver();
       const currentStreamValue = roundWeiAmount(
         BigInt(flowRateToReceiver) *
           BigInt(fromTimeUnitsToSeconds(1, unitOfTime[timeInterval])),
@@ -162,7 +161,7 @@ export default function EditStream(props: EditStreamProps) {
 
       setAmountPerTimeInterval(currentStreamValue);
     })();
-  }, [address, superToken, receiver]);
+  }, [address, superToken, receiver, flowRateToReceiver]);
 
   const netImpact = useMemo(() => {
     if (
@@ -253,7 +252,7 @@ export default function EditStream(props: EditStreamProps) {
     await executeTransactions(transactions);
     await updateSfAccountInfo(superToken);
 
-    const flowRateToReceiver = await updateFlowRateToReceiver();
+    const flowRateToReceiver = await getFlowRateToReceiver();
     const currentStreamValue = roundWeiAmount(
       BigInt(flowRateToReceiver) *
         BigInt(fromTimeUnitsToSeconds(1, unitOfTime[timeInterval])),

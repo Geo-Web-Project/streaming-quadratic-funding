@@ -36,9 +36,15 @@ export type FundGranteeProps = {
 };
 
 export default function FundGrantee(props: FundGranteeProps) {
-  const { recipientId, granteeAddress, name, setTransactionPanelState } = props;
+  const {
+    recipientId,
+    granteeAddress,
+    name,
+    setTransactionPanelState,
+    userAllocationData,
+    granteeIndex,
+  } = props;
 
-  const [flowRateToReceiver, setFlowRateToReceiver] = useState("");
   const [newFlowRate, setNewFlowRate] = useState("");
 
   const publicClient = usePublicClient();
@@ -47,7 +53,7 @@ export default function FundGrantee(props: FundGranteeProps) {
   const { alloStrategy } = useAllo();
   const { superToken, getFlow } = useSuperfluid(DAIX_ADDRESS, address);
 
-  const updateFlowRateToReceiver = useCallback(async () => {
+  const getFlowRateToReceiver = useCallback(async () => {
     if (!address || !superToken) {
       return "0";
     }
@@ -57,8 +63,6 @@ export default function FundGrantee(props: FundGranteeProps) {
       address,
       granteeAddress
     );
-
-    setFlowRateToReceiver(flowRateToReceiver);
 
     return flowRateToReceiver ?? "0";
   }, [address, granteeAddress, superToken, getFlow]);
@@ -118,12 +122,15 @@ export default function FundGrantee(props: FundGranteeProps) {
         gap={4}
         className="flex-grow-0 rounded-4 text-white pb-3"
       >
-        <RecipientDetails flowRateToReceiver={flowRateToReceiver} {...props} />
+        <RecipientDetails
+          flowRateToReceiver={userAllocationData[granteeIndex].flowRate}
+          {...props}
+        />
         <EditStream
           receiver={granteeAddress}
           granteeName={name}
-          flowRateToReceiver={flowRateToReceiver}
-          updateFlowRateToReceiver={updateFlowRateToReceiver}
+          flowRateToReceiver={userAllocationData[granteeIndex].flowRate}
+          getFlowRateToReceiver={getFlowRateToReceiver}
           newFlowRate={newFlowRate}
           setNewFlowRate={setNewFlowRate}
           isFundingMatchingPool={false}

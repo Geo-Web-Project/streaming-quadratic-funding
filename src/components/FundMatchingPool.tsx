@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useAccount } from "wagmi";
 import Offcanvas from "react-bootstrap/Offcanvas";
 import Stack from "react-bootstrap/Stack";
@@ -12,6 +12,7 @@ import CloseIcon from "../assets/close.svg";
 import { ETHX_ADDRESS } from "../lib/constants";
 import useSuperfluid from "../hooks/superfluid";
 import useAllo from "../hooks/allo";
+import useRoundQuery from "../hooks/roundQuery";
 
 interface FundMatchingPoolProps {
   setTransactionPanelState: React.Dispatch<
@@ -22,21 +23,34 @@ interface FundMatchingPoolProps {
 export default function FundMatchingPool(props: FundMatchingPoolProps) {
   const { setTransactionPanelState } = props;
 
-  const [flowRateToReceiver, setFlowRateToReceiver] = useState("");
   const [newFlowRate, setNewFlowRate] = useState("");
 
   const { address } = useAccount();
   const { gdaDistributeFlow, gdaGetFlowRate } = useSuperfluid("ETHx", address);
   const { gdaPool } = useAllo();
+  const { matchingData } = useRoundQuery();
 
-  const updateFlowRateToReceiver = useCallback(async () => {
+  const flowRateToReceiver = useMemo(() => {
+    if (address && matchingData) {
+      const index = matchingData.poolDistributors.findIndex(
+        (distributor: { account: { id: string } }) =>
+          distributor.account.id === address.toLowerCase()
+      );
+
+      if (index > -1) {
+        return matchingData.poolDistributors[index].flowRate;
+      }
+    }
+
+    return "0";
+  }, [address, matchingData]);
+
+  const getFlowRateToReceiver = useCallback(async () => {
     if (!address) {
       return "0";
     }
 
     const flowRateToReceiver = await gdaGetFlowRate(address, ETHX_ADDRESS);
-
-    setFlowRateToReceiver(flowRateToReceiver);
 
     return flowRateToReceiver ?? "0";
   }, [address, gdaGetFlowRate]);
@@ -83,7 +97,7 @@ export default function FundMatchingPool(props: FundMatchingPoolProps) {
         <EditStream
           granteeName="GDA Matching Pool"
           receiver={gdaPool ?? "0x"}
-          updateFlowRateToReceiver={updateFlowRateToReceiver}
+          getFlowRateToReceiver={getFlowRateToReceiver}
           flowRateToReceiver={flowRateToReceiver}
           granteeIndex={null}
           newFlowRate={newFlowRate}

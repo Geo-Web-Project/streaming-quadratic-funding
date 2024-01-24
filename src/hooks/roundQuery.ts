@@ -62,6 +62,12 @@ const GDA_POOL_QUERY = gql`
         totalAmountClaimed
         updatedAtTimestamp
       }
+      poolDistributors {
+        account {
+          id
+        }
+        flowRate
+      }
     }
   }
 `;
@@ -241,6 +247,7 @@ export default function useRoundQuery(userAddress?: Address) {
         pool.totalAmountFlowedDistributedUntilUpdatedAt,
       updatedAtTimestamp: pool.updatedAtTimestamp,
       members: [],
+      poolDistributors: pool.poolDistributors,
     };
 
     for (const recipient of recipients) {
