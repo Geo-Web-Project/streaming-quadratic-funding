@@ -161,7 +161,7 @@ export default function EditStream(props: EditStreamProps) {
 
       setAmountPerTimeInterval(currentStreamValue);
     })();
-  }, [address, superToken, receiver, flowRateToReceiver]);
+  }, [address, receiver]);
 
   const netImpact = useMemo(() => {
     if (
