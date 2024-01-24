@@ -210,7 +210,7 @@ export default function FundingSources(props: FundingSourcesProps) {
                   }}
                 >
                   {parseFloat(
-                    perSecondToPerMonth(totalFlowRateMatching).toFixed(2)
+                    perSecondToPerMonth(totalFlowRateMatching).toFixed(6)
                   )}
                 </Badge>
                 <Card.Text className="w-25 m-0">/month</Card.Text>

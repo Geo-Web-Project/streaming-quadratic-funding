@@ -73,6 +73,11 @@ interface Dataset {
   [key: string]: number;
 }
 
+type TimerStarted = {
+  dai: number;
+  eth: number;
+};
+
 enum Source {
   YOU,
   DIRECT,
@@ -106,10 +111,14 @@ export default function Visualization(props: VisualizationProps) {
   const [datasetEth, setDatasetEth] = useState<Dataset[] | null>(null);
   const [timerSymbolsEth, setTimerSymbolsEth] = useState<Timer | null>(null);
   const [timerSymbolsDai, setTimerSymbolsDai] = useState<Timer | null>(null);
-  const [timerUpdateSymbols, setTimerUpdateSymbols] = useState<Timer | null>(
-    null
-  );
-  const [timerStarted, setTimerStarted] = useState<number>();
+  const [timerUpdateSymbolsEth, setTimerUpdateSymbolsEth] =
+    useState<Timer | null>(null);
+  const [timerUpdateSymbolsDai, setTimerUpdateSymbolsDai] =
+    useState<Timer | null>(null);
+  const [timerStarted, setTimerStarted] = useState<TimerStarted>({
+    dai: 0,
+    eth: 0,
+  });
   const [symbolsPerSecondDai, setSymbolsPerSecondDai] = useState(0);
   const [symbolsPerSecondEth, setSymbolsPerSecondEth] = useState(0);
 
@@ -190,16 +199,31 @@ export default function Visualization(props: VisualizationProps) {
   useEffect(() => {
     let _timerSymbolsDai: Timer | null = null;
     let _timerSymbolsEth: Timer | null = null;
-    let _timerUpdateSymbols: Timer | null = null;
+    let _timerUpdateSymbolsDai: Timer | null = null;
+    let _timerUpdateSymbolsEth: Timer | null = null;
 
-    const flowRateUserAllocation = calcTotalFlowRate(
-      userAllocationData.map((elem: AllocationData) => elem.flowRate)
+    const flowRateUserAllocation = Number(
+      formatEther(
+        calcTotalFlowRate(
+          userAllocationData.map((elem: AllocationData) =>
+            BigInt(elem.flowRate)
+          )
+        )
+      )
     );
     const flowRateDirectAllocation =
-      calcTotalFlowRate(
-        directAllocationData.map((elem: AllocationData) => elem.flowRate)
+      Number(
+        formatEther(
+          calcTotalFlowRate(
+            directAllocationData.map((elem: AllocationData) =>
+              BigInt(elem.flowRate)
+            )
+          )
+        )
       ) - flowRateUserAllocation;
-    const flowRateMatching = calcTotalFlowRate([matchingData.flowRate]);
+    const flowRateMatching = Number(
+      formatEther(calcTotalFlowRate([BigInt(matchingData.flowRate)]))
+    );
 
     const totalDai = flowRateUserAllocation + flowRateDirectAllocation;
     const datasetDai: Dataset[] = [
@@ -279,37 +303,58 @@ export default function Visualization(props: VisualizationProps) {
     const symbolsPerSecondDai = amountToSymbolsPerSecond(totalDai);
     const symbolsPerSecondEth = amountToSymbolsPerSecond(flowRateMatching);
 
-    if (timerSymbolsDai && timerSymbolsEth && timerUpdateSymbols) {
+    if (timerSymbolsDai && timerUpdateSymbolsDai) {
       timerSymbolsDai.restart(
         (elapsed) => enterSymbol(elapsed, datasetDai, Token.DAI),
         MS_PER_SECOND / symbolsPerSecondDai,
-        timerStarted
+        timerStarted.dai
       );
-      timerSymbolsEth.restart(
-        (elapsed) => enterSymbol(elapsed, datasetEth, Token.ETH),
-        MS_PER_SECOND / symbolsPerSecondEth,
-        timerStarted
-      );
-      timerUpdateSymbols.restart(
-        (elapsed) => updateSymbols(elapsed),
+      timerUpdateSymbolsDai.restart(
+        (elapsed) => updateSymbols(elapsed, Token.DAI),
         0,
-        timerStarted
+        timerStarted.dai
       );
-    } else {
+    } else if (symbolsPerSecondDai > 0) {
       _timerSymbolsDai = interval(
         (elapsed) => enterSymbol(elapsed, datasetDai, Token.DAI),
         MS_PER_SECOND / symbolsPerSecondDai
       );
+      _timerUpdateSymbolsDai = timer((elapsed) =>
+        updateSymbols(elapsed, Token.DAI)
+      );
+
+      setTimerUpdateSymbolsDai(_timerUpdateSymbolsDai);
+      setTimerSymbolsDai(_timerSymbolsDai);
+      setTimerStarted((prev) => {
+        return { ...prev, dai: now() };
+      });
+    }
+
+    if (timerSymbolsEth && timerUpdateSymbolsEth) {
+      timerSymbolsEth.restart(
+        (elapsed) => enterSymbol(elapsed, datasetEth, Token.ETH),
+        MS_PER_SECOND / symbolsPerSecondEth,
+        timerStarted.eth
+      );
+      timerUpdateSymbolsEth.restart(
+        (elapsed) => updateSymbols(elapsed, Token.ETH),
+        0,
+        timerStarted.eth
+      );
+    } else if (symbolsPerSecondEth > 0) {
       _timerSymbolsEth = interval(
         (elapsed) => enterSymbol(elapsed, datasetEth, Token.ETH),
         MS_PER_SECOND / symbolsPerSecondEth
       );
-      _timerUpdateSymbols = timer(updateSymbols);
+      _timerUpdateSymbolsEth = timer((elapsed) =>
+        updateSymbols(elapsed, Token.ETH)
+      );
 
-      setTimerStarted(now());
-      setTimerUpdateSymbols(_timerUpdateSymbols);
-      setTimerSymbolsDai(_timerSymbolsDai);
+      setTimerUpdateSymbolsEth(_timerUpdateSymbolsEth);
       setTimerSymbolsEth(_timerSymbolsEth);
+      setTimerStarted((prev) => {
+        return { ...prev, eth: now() };
+      });
     }
 
     setDatasetDai(datasetDai);
@@ -326,8 +371,12 @@ export default function Visualization(props: VisualizationProps) {
         _timerSymbolsEth.stop();
       }
 
-      if (_timerUpdateSymbols) {
-        _timerUpdateSymbols.stop();
+      if (_timerUpdateSymbolsDai) {
+        _timerUpdateSymbolsDai.stop();
+      }
+
+      if (_timerUpdateSymbolsEth) {
+        _timerUpdateSymbolsEth.stop();
       }
     };
   }, [
@@ -371,22 +420,18 @@ export default function Visualization(props: VisualizationProps) {
     return symbol;
   };
 
-  const updateSymbols = (elapsed: number) => {
+  const updateSymbols = (elapsed: number, token: Token) => {
+    const selector = token === Token.ETH ? ".eth-symbol" : ".dai-symbol";
     const xProgressAccessor = (symbol: Symbol) =>
       (elapsed - symbol.startTime) / VIZ_ANIMATION_DURATION;
-    const symbolsDai = symbolsGroup.current.selectAll(".dai-symbol").data(
-      symbols.filter((d) => xProgressAccessor(d) < 1 && d.token === Token.DAI),
-      (symbol: Symbol) => symbol.id
-    );
-    const symbolsEth = symbolsGroup.current.selectAll(".eth-symbol").data(
-      symbols.filter((d) => xProgressAccessor(d) < 1 && d.token === Token.ETH),
+    const currentSymbols = symbolsGroup.current.selectAll(selector).data(
+      symbols.filter((d) => xProgressAccessor(d) < 1 && d.token === token),
       (symbol: Symbol) => symbol.id
     );
 
-    symbolsDai.exit().remove();
-    symbolsEth.exit().remove();
+    currentSymbols.exit().remove();
 
-    selectAll(".symbol")
+    selectAll(selector)
       .style("transform", (d: any) => {
         const x = xScale(xProgressAccessor(d));
         const yStart = startYScale(d.source);
@@ -456,6 +501,10 @@ export default function Visualization(props: VisualizationProps) {
   };
 
   const amountToSymbolsPerSecond = (amount: number) => {
+    if (amount === 0) {
+      return 0;
+    }
+
     const startRange = findStartRange(amount);
     const endRange = startRange * 10;
     const symbolsPerSecond = mapAmountInRange(amount, {
@@ -472,11 +521,10 @@ export default function Visualization(props: VisualizationProps) {
   const findStartRange = (amount: number) =>
     Math.pow(10, Math.floor(Math.log10(amount)));
 
-  const calcTotalFlowRate = (flowRates: `${number}`[]) =>
+  const calcTotalFlowRate = (flowRates: bigint[]) =>
     flowRates.reduce(
-      (acc: number, flowRate: string) =>
-        acc + Number(formatEther(BigInt(flowRate))),
-      0
+      (acc: bigint, flowRate: bigint) => acc + flowRate,
+      BigInt(0)
     );
 
   const calcContributionImpactOnMatching = (
