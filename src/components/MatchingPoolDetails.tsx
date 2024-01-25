@@ -149,7 +149,7 @@ export default function MatchingPoolDetails(props: MatchingPoolDetailsProps) {
             )}
           </Badge>
         </Stack>
-        <Card.Text className="w-20 align-self-end">total funding</Card.Text>
+        <Card.Text className="w-20 mt-3">total funding</Card.Text>
       </Stack>
       <Card.Text className="m-0 p-2 fs-5" style={{ maxWidth: 500 }}>
         100% of Geo Web PCO land market revenue is allocated through streaming

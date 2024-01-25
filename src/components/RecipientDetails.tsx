@@ -156,7 +156,7 @@ export default function RecipientDetails(props: RecipientDetailsProps) {
             {formatEther(streamedMatching).slice(0, 8)}
           </Badge>
         </Stack>
-        <Card.Text className="w-20 align-self-end">total funding</Card.Text>
+        <Card.Text className="w-20 mt-3">total funding</Card.Text>
       </Stack>
       <Card.Text className="m-0 p-2 fs-5" style={{ maxWidth: 500 }}>
         {description}
