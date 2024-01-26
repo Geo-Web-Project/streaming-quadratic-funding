@@ -26,12 +26,6 @@ export default function useSuperfluid(
   const [superToken, setSuperToken] = useState<
     NativeAssetSuperToken | WrapperSuperToken
   >();
-  const [accountFlowRate, setAccountFlowRate] = useState("0");
-  const [underlyingTokenAllowance, setUnderlyingTokenAllowance] = useState("0");
-  const [startingSuperTokenBalance, setStartingSuperTokenBalance] = useState({
-    availableBalance: "0",
-    timestamp: 0,
-  });
 
   const signer = useEthersSigner();
   const provider = useEthersProvider();
@@ -65,32 +59,12 @@ export default function useSuperfluid(
     })();
   }, [chain, accountAddress]);
 
-  useEffect(() => {
-    if (!superToken || !accountAddress) {
-      return;
-    }
-
-    updateSfAccountInfo(superToken);
-  }, [superToken, accountAddress]);
-
-  const updateSfAccountInfo = async (
+  const getUnderlyingTokenAllowance = async (
     superToken: NativeAssetSuperToken | WrapperSuperToken
   ) => {
     if (!accountAddress) {
       throw Error("Could not find the account address");
     }
-
-    const accountFlowRate = await superToken.getNetFlow({
-      account: accountAddress,
-      providerOrSigner: provider,
-    });
-    const timestamp = (Date.now() / 1000) | 0;
-    const { availableBalance, timestamp: startingDate } =
-      await superToken.realtimeBalanceOf({
-        account: accountAddress,
-        timestamp,
-        providerOrSigner: provider,
-      });
 
     const underlyingToken = superToken.underlyingToken;
     const underlyingTokenAllowance = await underlyingToken?.allowance({
@@ -99,12 +73,7 @@ export default function useSuperfluid(
       providerOrSigner: provider,
     });
 
-    setAccountFlowRate(accountFlowRate);
-    setUnderlyingTokenAllowance(underlyingTokenAllowance ?? "0");
-    setStartingSuperTokenBalance({
-      availableBalance,
-      timestamp: (new Date(startingDate).getTime() / 1000) | 0,
-    });
+    return underlyingTokenAllowance ?? "0";
   };
 
   const getFlow = async (
@@ -231,6 +200,23 @@ export default function useSuperfluid(
     await execTransaction(op);
   };
 
+  const deleteFlow = async (receiver: Address) => {
+    if (!accountAddress) {
+      throw Error("Could not find the account address");
+    }
+
+    if (!superToken) {
+      throw Error("Super Token was not initialized");
+    }
+
+    const op = superToken.deleteFlow({
+      sender: accountAddress,
+      receiver,
+    });
+
+    await execTransaction(op);
+  };
+
   const gdaGetFlowRate = async (
     account: Address,
     superTokenAddress: Address
@@ -290,11 +276,9 @@ export default function useSuperfluid(
   return {
     sfFramework,
     superToken,
-    startingSuperTokenBalance,
-    accountFlowRate,
-    underlyingTokenAllowance,
-    updateSfAccountInfo,
+    getUnderlyingTokenAllowance,
     updatePermissions,
+    deleteFlow,
     gdaDistributeFlow,
     gdaGetFlowRate,
     getFlow,

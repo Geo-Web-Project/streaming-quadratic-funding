@@ -35,6 +35,7 @@ import useFlowingAmount from "../hooks/flowingAmount";
 import useSuperfluid from "../hooks/superfluid";
 import useTransactionsQueue from "../hooks/transactionsQueue";
 import useAllo from "../hooks/allo";
+import useRoundQuery from "../hooks/roundQuery";
 import { passportDecoderAbi } from "../lib/abi/passportDecoder";
 import {
   TimeInterval,
@@ -49,6 +50,7 @@ import {
 import {
   DAI_ADDRESS,
   DAIX_ADDRESS,
+  ETHX_ADDRESS,
   SQF_STRATEGY_ADDRESS,
 } from "../lib/constants";
 
@@ -91,6 +93,8 @@ export default function EditStream(props: EditStreamProps) {
   } = props;
 
   const [wrapAmount, setWrapAmount] = useState<string | null>(null);
+  const [underlyingTokenAllowance, setUnderlyingTokenAllowance] =
+    useState<string>("0");
   const [step, setStep] = useState(Step.SELECT_AMOUNT);
   const [amountPerTimeInterval, setAmountPerTimeInterval] = useState("");
   const [timeInterval, setTimeInterval] = useState<TimeInterval>(
@@ -100,19 +104,23 @@ export default function EditStream(props: EditStreamProps) {
   const { address } = useAccount();
   const { chain } = useNetwork();
   const { passportDecoder } = useAllo();
+  const { userTokenSnapshots } = useRoundQuery(address);
   const {
     superToken,
-    startingSuperTokenBalance,
-    accountFlowRate,
-    underlyingTokenAllowance,
-    updateSfAccountInfo,
+    getUnderlyingTokenAllowance,
     updatePermissions,
     wrap,
     underlyingTokenApprove,
   } = useSuperfluid(isFundingMatchingPool ? "ETHx" : DAIX_ADDRESS, address);
+  const userTokenSnapshot = userTokenSnapshots?.filter((snapshot) =>
+    isFundingMatchingPool
+      ? snapshot.token === ETHX_ADDRESS.toLowerCase()
+      : snapshot.token === DAIX_ADDRESS.toLowerCase()
+  )[0];
+  const accountFlowRate = userTokenSnapshot?.totalNetFlowRate ?? "0";
   const superTokenBalance = useFlowingAmount(
-    BigInt(startingSuperTokenBalance.availableBalance ?? 0),
-    startingSuperTokenBalance.timestamp ?? 0,
+    BigInt(userTokenSnapshot?.balanceUntilUpdatedAt ?? 0),
+    userTokenSnapshot?.updatedAtTimestamp ?? 0,
     BigInt(accountFlowRate)
   );
   const { data: underlyingTokenBalance } = useBalance({
@@ -139,29 +147,66 @@ export default function EditStream(props: EditStreamProps) {
     });
 
   const shouldWrap = Number(wrapAmount) > 0 ? true : false;
-  const totalTransactions =
-    isFundingMatchingPool && shouldWrap
-      ? 2
-      : shouldWrap
-      ? 4
-      : isFundingMatchingPool
-      ? 1
-      : 2;
   const superTokenSymbol = isFundingMatchingPool ? "ETHx" : "DAIx";
   const superTokenIcon = isFundingMatchingPool ? ETHLogo : DAILogo;
   const underlyingTokenName = isFundingMatchingPool ? "ETH" : "DAI";
+  const isDeletingStream =
+    BigInt(flowRateToReceiver) > 0 && BigInt(newFlowRate) <= 0;
+  const isDecresingStream = BigInt(newFlowRate) < BigInt(flowRateToReceiver);
+  const wrapAmountWei = parseEther(wrapAmount ?? "0");
+  const approvalTransactions =
+    !isFundingMatchingPool && wrapAmountWei > BigInt(underlyingTokenAllowance)
+      ? 1
+      : 0;
+  const totalTransactions =
+    isDeletingStream ||
+    (!shouldWrap && isDecresingStream) ||
+    (isFundingMatchingPool && !shouldWrap)
+      ? 1
+      : (isFundingMatchingPool && shouldWrap) ||
+        (shouldWrap && isDecresingStream)
+      ? 2 + approvalTransactions
+      : shouldWrap
+      ? 3 + approvalTransactions
+      : 0;
 
-  useEffect(() => {
-    (async () => {
-      const currentStreamValue = roundWeiAmount(
-        BigInt(flowRateToReceiver) *
-          BigInt(fromTimeUnitsToSeconds(1, unitOfTime[timeInterval])),
-        4
-      );
+  const liquidationEstimate = useMemo(() => {
+    if (address && userTokenSnapshot) {
+      if (
+        BigInt(-accountFlowRate) -
+          BigInt(flowRateToReceiver) +
+          BigInt(newFlowRate) >
+        BigInt(0)
+      ) {
+        const date = dayjs(
+          new Date(userTokenSnapshot.updatedAtTimestamp * 1000)
+        );
 
-      setAmountPerTimeInterval(currentStreamValue);
-    })();
-  }, [address, receiver]);
+        return date
+          .add(
+            dayjs.duration({
+              seconds: Number(
+                (BigInt(userTokenSnapshot.balanceUntilUpdatedAt) +
+                  parseEther(wrapAmount ?? "0")) /
+                  (BigInt(-accountFlowRate) -
+                    BigInt(flowRateToReceiver) +
+                    BigInt(newFlowRate))
+              ),
+            })
+          )
+          .unix();
+      }
+    }
+
+    return null;
+  }, [
+    userTokenSnapshot,
+    accountFlowRate,
+    address,
+    wrapAmount,
+    flowRateToReceiver,
+    newFlowRate,
+  ]);
 
   const netImpact = useMemo(() => {
     if (
@@ -191,8 +236,45 @@ export default function EditStream(props: EditStreamProps) {
   }, [newFlowRate, flowRateToReceiver, matchingData]);
 
   useEffect(() => {
+    (async () => {
+      const currentStreamValue = roundWeiAmount(
+        BigInt(flowRateToReceiver) *
+          BigInt(fromTimeUnitsToSeconds(1, unitOfTime[timeInterval])),
+        4
+      );
+
+      setAmountPerTimeInterval(currentStreamValue);
+    })();
+  }, [address, receiver]);
+
+  useEffect(() => {
+    (async () => {
+      if (superToken && !isFundingMatchingPool) {
+        const underlyingTokenAllowance =
+          await getUnderlyingTokenAllowance(superToken);
+
+        setUnderlyingTokenAllowance(underlyingTokenAllowance);
+      }
+    })();
+  }, [superToken]);
+
+  useEffect(() => {
     if (amountPerTimeInterval) {
-      setWrapAmount(formatEther(parseEther(amountPerTimeInterval) * BigInt(3)));
+      if (
+        amountPerTimeInterval &&
+        Number(amountPerTimeInterval) > 0 &&
+        liquidationEstimate &&
+        dayjs
+          .unix(liquidationEstimate)
+          .isBefore(dayjs().add(dayjs.duration({ months: 3 })))
+      ) {
+        setWrapAmount(
+          formatEther(parseEther(amountPerTimeInterval) * BigInt(3))
+        );
+      } else {
+        setWrapAmount("");
+      }
+
       setNewFlowRate(
         (
           parseEther(amountPerTimeInterval) /
@@ -223,12 +305,7 @@ export default function EditStream(props: EditStreamProps) {
     let transactions: (() => Promise<void>)[] = [];
 
     if (wrapAmount && Number(wrapAmount) > 0) {
-      const wrapAmountWei = parseEther(wrapAmount);
-
-      if (
-        !isFundingMatchingPool &&
-        wrapAmountWei > BigInt(underlyingTokenAllowance)
-      ) {
+      if (!isFundingMatchingPool && approvalTransactions > 0) {
         transactions.push(async () => {
           await underlyingTokenApprove(wrapAmountWei.toString());
         });
@@ -237,7 +314,10 @@ export default function EditStream(props: EditStreamProps) {
       transactions.push(async () => await wrap(wrapAmountWei));
     }
 
-    if (!isFundingMatchingPool) {
+    if (
+      !isFundingMatchingPool &&
+      BigInt(newFlowRate) > BigInt(flowRateToReceiver)
+    ) {
       transactions.push(
         async () =>
           await updatePermissions(
@@ -250,11 +330,10 @@ export default function EditStream(props: EditStreamProps) {
     transactions.push(...transactionsToQueue);
 
     await executeTransactions(transactions);
-    await updateSfAccountInfo(superToken);
 
-    const flowRateToReceiver = await getFlowRateToReceiver();
+    const _flowRateToReceiver = await getFlowRateToReceiver();
     const currentStreamValue = roundWeiAmount(
-      BigInt(flowRateToReceiver) *
+      BigInt(_flowRateToReceiver) *
         BigInt(fromTimeUnitsToSeconds(1, unitOfTime[timeInterval])),
       4
     );
@@ -410,16 +489,27 @@ export default function EditStream(props: EditStreamProps) {
             </Stack>
             {address ? (
               <Button
-                variant="success"
+                variant={isDeletingStream ? "danger" : "success"}
                 disabled={
                   !amountPerTimeInterval ||
-                  Number(amountPerTimeInterval) <= 0 ||
+                  Number(amountPerTimeInterval) < 0 ||
+                  (BigInt(flowRateToReceiver) === BigInt(0) &&
+                    Number(amountPerTimeInterval) === 0) ||
                   newFlowRate === flowRateToReceiver
                 }
                 className="py-1 rounded-3 text-white"
-                onClick={() => setStep(Step.WRAP)}
+                onClick={() =>
+                  setStep(
+                    wrapAmount
+                      ? Step.WRAP
+                      : isFundingMatchingPool ||
+                        (passportScore && passportScore >= minPassportScore)
+                      ? Step.REVIEW
+                      : Step.MINT_PASSPORT
+                  )
+                }
               >
-                Continue
+                {isDeletingStream ? "Cancel Stream" : "Continue"}
               </Button>
             ) : (
               <ConnectWallet />
@@ -503,7 +593,7 @@ export default function EditStream(props: EditStreamProps) {
                 Balance:{" "}
                 {underlyingTokenBalance
                   ? underlyingTokenBalance.formatted.slice(0, 8)
-                  : "0"}
+                  : ""}
               </Card.Text>
               <Badge
                 pill
@@ -520,10 +610,7 @@ export default function EditStream(props: EditStreamProps) {
                   type="text"
                   placeholder="0"
                   disabled={!address}
-                  value={
-                    wrapAmount ??
-                    formatEther(parseEther(amountPerTimeInterval) * BigInt(3))
-                  }
+                  value={wrapAmount ?? ""}
                   className="bg-purple w-75 border-0 text-white shadow-none"
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     handleAmountSelection(e, setWrapAmount)
@@ -919,52 +1006,28 @@ export default function EditStream(props: EditStreamProps) {
                 </Stack>
               )}
             </Stack>
-            {accountFlowRate &&
-              BigInt(-accountFlowRate) -
-                BigInt(flowRateToReceiver) +
-                parseEther(amountPerTimeInterval) /
-                  BigInt(fromTimeUnitsToSeconds(1, unitOfTime[timeInterval])) >
-                BigInt(0) && (
-                <Stack direction="horizontal" gap={1} className="mt-1">
-                  <Card.Text className="m-0">Est. Liquidation</Card.Text>
-                  <OverlayTrigger
-                    overlay={
-                      <Tooltip id="t-liquidation-info" className="fs-6">
-                        This is the current estimate for when your token balance
-                        will reach 0. Make sure to close your stream or wrap
-                        more tokens before this date to avoid loss of your
-                        buffer deposit.
-                      </Tooltip>
-                    }
-                  >
-                    <Image src={InfoIcon} alt="liquidation info" width={16} />
-                  </OverlayTrigger>
-                  <Card.Text className="m-0 ms-1">
-                    {dayjs()
-                      .add(
-                        dayjs.duration({
-                          seconds:
-                            Number(
-                              formatEther(
-                                superTokenBalance +
-                                  parseEther(wrapAmount ?? "0")
-                              )
-                            ) /
-                            Number(
-                              formatEther(
-                                BigInt(-accountFlowRate) -
-                                  BigInt(flowRateToReceiver) +
-                                  BigInt(newFlowRate)
-                              )
-                            ),
-                        })
-                      )
-                      .format("MMMM D, YYYY")}
-                  </Card.Text>
-                </Stack>
-              )}
+            {liquidationEstimate && (
+              <Stack direction="horizontal" gap={1} className="mt-1">
+                <Card.Text className="m-0">Est. Liquidation</Card.Text>
+                <OverlayTrigger
+                  overlay={
+                    <Tooltip id="t-liquidation-info" className="fs-6">
+                      This is the current estimate for when your token balance
+                      will reach 0. Make sure to close your stream or wrap more
+                      tokens before this date to avoid loss of your buffer
+                      deposit.
+                    </Tooltip>
+                  }
+                >
+                  <Image src={InfoIcon} alt="liquidation info" width={16} />
+                </OverlayTrigger>
+                <Card.Text className="m-0 ms-1">
+                  {dayjs.unix(liquidationEstimate).format("MMMM D, YYYY")}
+                </Card.Text>
+              </Stack>
+            )}
             <Button
-              variant="success"
+              variant={isDeletingStream ? "danger" : "success"}
               disabled={step === Step.SUCCESS}
               className="d-flex justify-content-center mt-2 py-1 rounded-3 text-white fw-bold"
               onClick={handleSubmit}
@@ -985,6 +1048,8 @@ export default function EditStream(props: EditStreamProps) {
                     {completedTransactions + 1}/{totalTransactions}
                   </Card.Text>
                 </Stack>
+              ) : isDeletingStream ? (
+                "Cancel Stream"
               ) : (
                 `Submit (${totalTransactions})`
               )}
@@ -1000,7 +1065,11 @@ export default function EditStream(props: EditStreamProps) {
           </Stack>
         </Accordion.Collapse>
       </Card>
-      {step === Step.SUCCESS && (
+      {step === Step.SUCCESS && BigInt(newFlowRate) === BigInt(0) ? (
+        <Card className="bg-blue mt-4 p-4 text-white rounded-4">
+          <Card.Text>Your donation stream is closed.</Card.Text>
+        </Card>
+      ) : step === Step.SUCCESS ? (
         <Card className="bg-blue mt-4 p-4 text-white rounded-4">
           <Card.Text>
             Your donation stream is open. Thank you for supporting public goods!
@@ -1051,7 +1120,7 @@ export default function EditStream(props: EditStreamProps) {
             </Card.Link>
           </Stack>
         </Card>
-      )}
+      ) : null}
     </Accordion>
   );
 }

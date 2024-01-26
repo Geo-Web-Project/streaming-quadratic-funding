@@ -85,7 +85,7 @@ export default function Grantees(props: GranteesProps) {
               gap={1}
               className="align-items-center fs-6 m-0 p-0"
             >
-              <Badge className="bg-aqua w-33 rounded-1 fs-6 text-start fw-normal">
+              <Badge className="bg-aqua w-25 rounded-1 fs-6 text-start fw-normal">
                 {BigInt(userAllocationData[i].flowRate) > 0
                   ? parseFloat(
                       perSecondToPerMonth(
@@ -96,7 +96,7 @@ export default function Grantees(props: GranteesProps) {
                     )
                   : 0}{" "}
               </Badge>
-              <Badge className="bg-secondary w-33 rounded-1 px-1 fs-6 text-start fw-normal">
+              <Badge className="bg-secondary w-25 rounded-1 px-1 fs-6 text-start fw-normal">
                 {BigInt(directAllocationData[i].flowRate) > 0
                   ? parseFloat(
                       perSecondToPerMonth(
@@ -110,7 +110,7 @@ export default function Grantees(props: GranteesProps) {
                     )
                   : 0}{" "}
               </Badge>
-              <Badge className="bg-slate w-33 rounded-1 px-1 fs-6 text-start fw-normal">
+              <Badge className="bg-slate w-25 rounded-1 px-1 fs-6 text-start fw-normal">
                 {BigInt(matchingData.members[i].flowRate) > 0
                   ? parseFloat(
                       perSecondToPerMonth(
@@ -121,7 +121,7 @@ export default function Grantees(props: GranteesProps) {
                     )
                   : 0}{" "}
               </Badge>
-              /month
+              <Card.Text className="m-0">/month</Card.Text>
             </Stack>
           </Card>
         </Stack>

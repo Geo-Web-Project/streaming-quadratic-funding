@@ -50,8 +50,11 @@ export default function FundGrantee(props: FundGranteeProps) {
   const publicClient = usePublicClient();
   const { address } = useAccount();
   const { data: walletClient } = useWalletClient();
-  const { alloStrategy } = useAllo();
-  const { superToken, getFlow } = useSuperfluid(DAIX_ADDRESS, address);
+  const { alloStrategy, recipients } = useAllo();
+  const { superToken, getFlow, deleteFlow } = useSuperfluid(
+    DAIX_ADDRESS,
+    address
+  );
 
   const getFlowRateToReceiver = useCallback(async () => {
     if (!address || !superToken) {
@@ -134,7 +137,14 @@ export default function FundGrantee(props: FundGranteeProps) {
           newFlowRate={newFlowRate}
           setNewFlowRate={setNewFlowRate}
           isFundingMatchingPool={false}
-          transactionsToQueue={[allocate]}
+          transactionsToQueue={[
+            BigInt(newFlowRate) > 0
+              ? allocate
+              : () =>
+                  deleteFlow(
+                    recipients ? recipients[granteeIndex].superApp : "0x"
+                  ),
+          ]}
           {...props}
         />
       </Stack>
