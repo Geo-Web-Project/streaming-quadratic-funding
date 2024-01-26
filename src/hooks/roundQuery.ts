@@ -7,6 +7,7 @@ import { gdaAbi } from "../lib/abi/gda";
 import {
   AllocationData,
   MatchingData,
+  UserTokenSnapshots,
 } from "../components/StreamingQuadraticFunding";
 import { DAIX_ADDRESS, GDA_CONTRACT_ADDRESS } from "../lib/constants";
 
@@ -15,8 +16,8 @@ type PoolMemberQueryResult = {
   units: `${number}`;
 };
 
-const USER_ALLOCATION_QUERY = gql`
-  query UserAllocationQuery($address: String, $token: String) {
+const USER_INFO_QUERY = gql`
+  query UserInfoQuery($address: String, $token: String) {
     account(id: $address) {
       outflows(
         where: { token: $token }
@@ -29,6 +30,16 @@ const USER_ALLOCATION_QUERY = gql`
         streamedUntilUpdatedAt
         updatedAtTimestamp
         currentFlowRate
+      }
+      accountTokenSnapshots {
+        totalNetFlowRate
+        totalDeposit
+        maybeCriticalAtTimestamp
+        balanceUntilUpdatedAt
+        updatedAtTimestamp
+        token {
+          id
+        }
       }
     }
   }
@@ -75,9 +86,11 @@ const GDA_POOL_QUERY = gql`
 `;
 
 export default function useRoundQuery(userAddress?: Address) {
-  const [directAllocationData, setDirectAllocationData] =
-    useState<AllocationData[]>();
   const [userAllocationData, setUserAllocationData] =
+    useState<AllocationData[]>();
+  const [userTokenSnapshots, setUserTokenSnapshots] =
+    useState<UserTokenSnapshots>();
+  const [directAllocationData, setDirectAllocationData] =
     useState<AllocationData[]>();
   const [matchingData, setMatchingData] = useState<MatchingData>();
 
@@ -86,7 +99,7 @@ export default function useRoundQuery(userAddress?: Address) {
     ? recipients.map((recipient) => recipient.superApp.toLowerCase())
     : [];
   const publicClient = usePublicClient();
-  const { data: userAllocationQueryResult } = useQuery(USER_ALLOCATION_QUERY, {
+  const { data: userInfoQueryResult } = useQuery(USER_INFO_QUERY, {
     variables: {
       address: userAddress?.toLowerCase() ?? "",
       token: DAIX_ADDRESS.toLowerCase(),
@@ -113,7 +126,7 @@ export default function useRoundQuery(userAddress?: Address) {
         !publicClient ||
         !recipients ||
         !gdaPool ||
-        !userAllocationQueryResult ||
+        !userInfoQueryResult ||
         !directAllocationQueryResult ||
         directAllocationQueryResult?.accounts.length === 0 ||
         !matchingPoolQueryResult
@@ -127,17 +140,19 @@ export default function useRoundQuery(userAddress?: Address) {
     publicClient,
     recipients,
     userAddress,
-    userAllocationQueryResult,
+    userInfoQueryResult,
     directAllocationQueryResult,
     matchingPoolQueryResult,
   ]);
 
   const updateRoundData = async () => {
     const userAllocationData = getUserAllocationData();
+    const userTokenSnapshots = getUserTokenSnapshots();
     const directAllocationData = getDirectAllocationData();
     const matchingData = await getMatchingData();
 
     setUserAllocationData(userAllocationData);
+    setUserTokenSnapshots(userTokenSnapshots);
     setDirectAllocationData(directAllocationData);
     setMatchingData(matchingData);
   };
@@ -161,10 +176,10 @@ export default function useRoundQuery(userAddress?: Address) {
           BigInt(0)
         );
 
-    if (userAddress && userAllocationQueryResult.account) {
+    if (userAddress && userInfoQueryResult.account) {
       const {
         account: { outflows },
-      } = userAllocationQueryResult;
+      } = userInfoQueryResult;
 
       for (const superApp of superApps) {
         const index = outflows.findIndex(
@@ -190,11 +205,38 @@ export default function useRoundQuery(userAddress?: Address) {
           flowRate: "0",
           streamedUntilUpdatedAt: "0",
           updatedAtTimestamp: 0,
+          accountTokenSnapshots: [],
         })
       );
     }
 
     return userAllocationData;
+  };
+
+  const getUserTokenSnapshots = () => {
+    if (userAddress && userInfoQueryResult.account) {
+      const {
+        account: { accountTokenSnapshots },
+      } = userInfoQueryResult;
+
+      return accountTokenSnapshots.map(
+        (snapshot: {
+          totalNetFlowRate: `${number}`;
+          token: { id: Address };
+          balanceUntilUpdatedAt: `${number}`;
+          updatedAtTimestamp: number;
+        }) => {
+          return {
+            totalNetFlowRate: snapshot.totalNetFlowRate,
+            token: snapshot.token.id,
+            balanceUntilUpdatedAt: snapshot.balanceUntilUpdatedAt,
+            updatedAtTimestamp: snapshot.updatedAtTimestamp,
+          };
+        }
+      );
+    }
+
+    return [];
   };
 
   const getDirectAllocationData = () => {
@@ -237,10 +279,7 @@ export default function useRoundQuery(userAddress?: Address) {
       functionName: "getPoolAdjustmentFlowRate",
       args: [gdaPool ?? "0x"],
     });
-    const adjustedFlowRate =
-      BigInt(pool.flowRate) - adjustmentFlowRate === BigInt(0)
-        ? adjustmentFlowRate
-        : BigInt(pool.flowRate) - adjustmentFlowRate;
+    const adjustedFlowRate = BigInt(pool.flowRate) - adjustmentFlowRate;
 
     const matchingData: MatchingData = {
       totalUnits: pool.totalUnits,
@@ -274,6 +313,7 @@ export default function useRoundQuery(userAddress?: Address) {
 
   return {
     userAllocationData,
+    userTokenSnapshots,
     directAllocationData,
     matchingData,
   };

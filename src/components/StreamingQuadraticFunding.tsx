@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Address } from "viem";
 import { useAccount } from "wagmi";
 import Container from "react-bootstrap/Container";
 import Stack from "react-bootstrap/Stack";
@@ -18,6 +19,13 @@ export type AllocationData = {
   streamedUntilUpdatedAt: `${number}`;
   updatedAtTimestamp: number;
 };
+
+export type UserTokenSnapshots = {
+  token: Address;
+  totalNetFlowRate: `${number}`;
+  balanceUntilUpdatedAt: `${number}`;
+  updatedAtTimestamp: number;
+}[];
 
 export type MatchingData = {
   totalUnits: `${number}`;
