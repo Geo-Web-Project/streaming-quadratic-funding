@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useAccount, useWalletClient, usePublicClient } from "wagmi";
 import { Address } from "viem";
 import Stack from "react-bootstrap/Stack";
@@ -51,24 +51,10 @@ export default function FundGrantee(props: FundGranteeProps) {
   const { address } = useAccount();
   const { data: walletClient } = useWalletClient();
   const { alloStrategy, recipients } = useAllo();
-  const { superToken, getFlow, deleteFlow } = useSuperfluid(
+  const { superToken, deleteFlow } = useSuperfluid(
     DAIX_ADDRESS,
     address
   );
-
-  const getFlowRateToReceiver = useCallback(async () => {
-    if (!address || !superToken) {
-      return "0";
-    }
-
-    const { flowRate: flowRateToReceiver } = await getFlow(
-      superToken,
-      address,
-      granteeAddress
-    );
-
-    return flowRateToReceiver ?? "0";
-  }, [address, granteeAddress, superToken, getFlow]);
 
   const allocate = async () => {
     if (!walletClient) {
@@ -133,7 +119,6 @@ export default function FundGrantee(props: FundGranteeProps) {
           receiver={granteeAddress}
           granteeName={name}
           flowRateToReceiver={userAllocationData[granteeIndex].flowRate}
-          getFlowRateToReceiver={getFlowRateToReceiver}
           newFlowRate={newFlowRate}
           setNewFlowRate={setNewFlowRate}
           isFundingMatchingPool={false}

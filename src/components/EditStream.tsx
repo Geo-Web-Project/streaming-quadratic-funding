@@ -58,7 +58,6 @@ interface EditStreamProps {
   granteeName: string;
   granteeIndex: number | null;
   matchingData?: MatchingData;
-  getFlowRateToReceiver: () => Promise<string>;
   receiver: string;
   flowRateToReceiver: string;
   newFlowRate: string;
@@ -84,7 +83,6 @@ export default function EditStream(props: EditStreamProps) {
     granteeIndex,
     matchingData,
     flowRateToReceiver,
-    getFlowRateToReceiver,
     newFlowRate,
     setNewFlowRate,
     transactionsToQueue,
@@ -249,7 +247,7 @@ export default function EditStream(props: EditStreamProps) {
 
       setAmountPerTimeInterval(currentStreamValue);
     })();
-  }, [address, receiver]);
+  }, [address, receiver, flowRateToReceiver]);
 
   useEffect(() => {
     (async () => {
@@ -334,14 +332,6 @@ export default function EditStream(props: EditStreamProps) {
 
     await executeTransactions(transactions);
 
-    const _flowRateToReceiver = await getFlowRateToReceiver();
-    const currentStreamValue = roundWeiAmount(
-      BigInt(_flowRateToReceiver) *
-        BigInt(fromTimeUnitsToSeconds(1, unitOfTime[timeInterval])),
-      4
-    );
-
-    setAmountPerTimeInterval(currentStreamValue);
     setStep(Step.SUCCESS);
   };
 

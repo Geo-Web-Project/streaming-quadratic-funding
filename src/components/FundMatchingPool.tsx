@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useAccount } from "wagmi";
 import Offcanvas from "react-bootstrap/Offcanvas";
 import Stack from "react-bootstrap/Stack";
@@ -9,7 +9,6 @@ import MatchingPoolDetails from "./MatchingPoolDetails";
 import EditStream from "./EditStream";
 import { TransactionPanelState } from "./StreamingQuadraticFunding";
 import CloseIcon from "../assets/close.svg";
-import { ETHX_ADDRESS } from "../lib/constants";
 import useSuperfluid from "../hooks/superfluid";
 import useAllo from "../hooks/allo";
 import useRoundQuery from "../hooks/roundQuery";
@@ -26,7 +25,7 @@ export default function FundMatchingPool(props: FundMatchingPoolProps) {
   const [newFlowRate, setNewFlowRate] = useState("");
 
   const { address } = useAccount();
-  const { gdaDistributeFlow, gdaGetFlowRate } = useSuperfluid("ETHx", address);
+  const { gdaDistributeFlow } = useSuperfluid("ETHx", address);
   const { gdaPool } = useAllo();
   const { matchingData } = useRoundQuery();
 
@@ -44,16 +43,6 @@ export default function FundMatchingPool(props: FundMatchingPoolProps) {
 
     return "0";
   }, [address, matchingData]);
-
-  const getFlowRateToReceiver = useCallback(async () => {
-    if (!address) {
-      return "0";
-    }
-
-    const flowRateToReceiver = await gdaGetFlowRate(address, ETHX_ADDRESS);
-
-    return flowRateToReceiver ?? "0";
-  }, [address, gdaGetFlowRate]);
 
   const closeOffcanvas = () =>
     setTransactionPanelState({
@@ -97,7 +86,6 @@ export default function FundMatchingPool(props: FundMatchingPoolProps) {
         <EditStream
           granteeName="GDA Matching Pool"
           receiver={gdaPool ?? "0x"}
-          getFlowRateToReceiver={getFlowRateToReceiver}
           flowRateToReceiver={flowRateToReceiver}
           granteeIndex={null}
           newFlowRate={newFlowRate}
