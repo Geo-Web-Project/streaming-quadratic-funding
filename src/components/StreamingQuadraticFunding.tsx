@@ -18,6 +18,7 @@ export type AllocationData = {
   flowRate: `${number}`;
   streamedUntilUpdatedAt: `${number}`;
   updatedAtTimestamp: number;
+  activeCFAIncomingStreamCount?: number;
 };
 
 export type UserTokenSnapshots = {

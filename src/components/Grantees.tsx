@@ -5,6 +5,7 @@ import Button from "react-bootstrap/Button";
 import Image from "react-bootstrap/Image";
 import Badge from "react-bootstrap/Badge";
 import HandIcon from "../assets/hand.svg";
+import ContributionsIcon from "../assets/contributions.svg";
 import { Dimensions } from "./Visualization";
 import {
   TransactionPanelState,
@@ -78,7 +79,24 @@ export default function Grantees(props: GranteesProps) {
               as="p"
               className="d-block h-50 p-0 m-0 fs-5 text-info text-wrap text-break text-truncate lh-md"
             >
-              {clampText(descriptions[i], 72)}
+              <Stack
+                direction="horizontal"
+                gap={2}
+                className="justify-content-between"
+              >
+                <Stack
+                  direction="vertical"
+                  className="align-items-center fs-6 opacity-50 text-white"
+                >
+                  {directAllocationData[i].activeCFAIncomingStreamCount}
+                  <Image
+                    src={ContributionsIcon}
+                    alt="contributions"
+                    width={16}
+                  />
+                </Stack>
+                {clampText(descriptions[i], 62)}
+              </Stack>
             </Card.Subtitle>
             <Stack
               direction="horizontal"

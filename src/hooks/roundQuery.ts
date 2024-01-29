@@ -53,6 +53,7 @@ const DIRECT_ALLOCATION_QUERY = gql`
         totalAmountStreamedOutUntilUpdatedAt
         updatedAtTimestamp
         totalOutflowRate
+        activeCFAIncomingStreamCount
       }
     }
   }
@@ -254,12 +255,14 @@ export default function useRoundQuery(userAddress?: Address) {
         totalOutflowRate,
         totalAmountStreamedOutUntilUpdatedAt,
         updatedAtTimestamp,
+        activeCFAIncomingStreamCount,
       } = superAppSnapshot;
 
       directAllocationData.push({
         flowRate: totalOutflowRate,
         streamedUntilUpdatedAt: totalAmountStreamedOutUntilUpdatedAt,
         updatedAtTimestamp,
+        activeCFAIncomingStreamCount,
       });
     }
 
