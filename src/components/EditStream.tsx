@@ -168,29 +168,32 @@ export default function EditStream(props: EditStreamProps) {
       ? 2 + approvalTransactions
       : shouldWrap
       ? 3 + approvalTransactions
-      : 0;
+      : 2;
 
   const liquidationEstimate = useMemo(() => {
-    if (address && userTokenSnapshot) {
+    if (address) {
+      const newFlowRate =
+        parseEther(amountPerTimeInterval) /
+        BigInt(fromTimeUnitsToSeconds(1, unitOfTime[timeInterval]));
+
       if (
-        BigInt(-accountFlowRate) -
-          BigInt(flowRateToReceiver) +
-          BigInt(newFlowRate) >
+        BigInt(-accountFlowRate) - BigInt(flowRateToReceiver) + newFlowRate >
         BigInt(0)
       ) {
-        const date = dayjs(
-          new Date(userTokenSnapshot.updatedAtTimestamp * 1000)
-        );
+        const updatedAtTimestamp = userTokenSnapshot
+          ? userTokenSnapshot.updatedAtTimestamp * 1000
+          : Date.now();
+        const date = dayjs(new Date(updatedAtTimestamp));
 
         return date
           .add(
             dayjs.duration({
               seconds: Number(
-                (BigInt(userTokenSnapshot.balanceUntilUpdatedAt) +
+                (BigInt(userTokenSnapshot?.balanceUntilUpdatedAt ?? "0") +
                   parseEther(wrapAmount ?? "0")) /
                   (BigInt(-accountFlowRate) -
                     BigInt(flowRateToReceiver) +
-                    BigInt(newFlowRate))
+                    newFlowRate)
               ),
             })
           )
@@ -205,7 +208,8 @@ export default function EditStream(props: EditStreamProps) {
     address,
     wrapAmount,
     flowRateToReceiver,
-    newFlowRate,
+    amountPerTimeInterval,
+    timeInterval,
   ]);
 
   const netImpact = useMemo(() => {
@@ -318,13 +322,12 @@ export default function EditStream(props: EditStreamProps) {
       !isFundingMatchingPool &&
       BigInt(newFlowRate) > BigInt(flowRateToReceiver)
     ) {
-      transactions.push(
-        async () =>
-          await updatePermissions(
-            SQF_STRATEGY_ADDRESS,
-            BigInt(newFlowRate).toString()
-          )
-      );
+      transactions.push(async () => {
+        await updatePermissions(
+          SQF_STRATEGY_ADDRESS,
+          BigInt(newFlowRate).toString()
+        );
+      });
     }
 
     transactions.push(...transactionsToQueue);
