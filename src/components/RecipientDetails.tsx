@@ -79,9 +79,17 @@ export default function RecipientDetails(props: RecipientDetailsProps) {
   return (
     <Stack direction="vertical" className="bg-blue rounded-4 p-2 pt-0">
       <Stack direction="horizontal" gap={2} className="align-items-end">
-        <Image src={image} alt="SQF" width={128} />
-        <Card className="bg-transparent text-white border-0">
-          <Card.Title className="text-secondary fs-4">{name}</Card.Title>
+        <Image
+          src={image}
+          alt="SQF"
+          width={96}
+          height={96}
+          className="ms-2 rounded-4"
+        />
+        <Card className="bg-transparent text-white border-0 mt-3 ms-3">
+          <Card.Title className="text-secondary fs-4 d-block text-truncate">
+            {name}
+          </Card.Title>
           <Card.Subtitle className="mb-0 fs-5">
             Your Current Stream
           </Card.Subtitle>

@@ -51,7 +51,7 @@ export default function FundGrantee(props: FundGranteeProps) {
   const { address } = useAccount();
   const { data: walletClient } = useWalletClient();
   const { alloStrategy, recipients } = useAllo();
-  const { superToken, deleteFlow } = useSuperfluid(
+  const { deleteFlow } = useSuperfluid(
     DAIX_ADDRESS,
     address
   );

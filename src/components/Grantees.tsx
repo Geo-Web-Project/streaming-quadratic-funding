@@ -75,29 +75,25 @@ export default function Grantees(props: GranteesProps) {
           </Button>
           <Card className="h-100 px-1 bg-transparent text-white border-0">
             <Card.Title className="m-0 mb-1 p-0 fs-4">{grantee}</Card.Title>
-            <Card.Subtitle
-              as="p"
-              className="d-block h-50 p-0 m-0 fs-5 text-info text-wrap text-break text-truncate lh-md"
+            <Stack
+              direction="horizontal"
+              gap={2}
+              className="justify-content-between"
             >
               <Stack
-                direction="horizontal"
-                gap={2}
-                className="justify-content-between"
+                direction="vertical"
+                className="align-items-center fs-6 opacity-50 text-white"
               >
-                <Stack
-                  direction="vertical"
-                  className="align-items-center fs-6 opacity-50 text-white"
-                >
-                  {directAllocationData[i].activeCFAIncomingStreamCount}
-                  <Image
-                    src={ContributionsIcon}
-                    alt="contributions"
-                    width={16}
-                  />
-                </Stack>
-                {clampText(descriptions[i], 62)}
+                {directAllocationData[i].activeCFAIncomingStreamCount}
+                <Image src={ContributionsIcon} alt="contributions" width={16} />
               </Stack>
-            </Card.Subtitle>
+              <Card.Subtitle
+                as="p"
+                className="d-block p-0 m-0 mb-1 fs-5 text-info text-wrap text-break text-truncate lh-md"
+              >
+                {clampText(descriptions[i], 62)}
+              </Card.Subtitle>
+            </Stack>
             <Stack
               direction="horizontal"
               gap={1}
