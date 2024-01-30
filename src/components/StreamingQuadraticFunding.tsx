@@ -125,6 +125,7 @@ export default function StreamingQuadraticFunding() {
           transactionPanelState.granteeIndex !== null && (
             <Col xs="3" className="p-0">
               <FundGrantee
+                key={transactionPanelState.granteeIndex}
                 userAllocationData={userAllocationData}
                 directAllocationData={directAllocationData}
                 matchingData={matchingData}
