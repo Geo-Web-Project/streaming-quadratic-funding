@@ -144,29 +144,11 @@ export default function EditStream(props: EditStreamProps) {
       watch: false,
     });
 
-  const shouldWrap = Number(wrapAmount) > 0 ? true : false;
   const superTokenSymbol = isFundingMatchingPool ? "ETHx" : "DAIx";
   const superTokenIcon = isFundingMatchingPool ? ETHLogo : DAILogo;
   const underlyingTokenName = isFundingMatchingPool ? "ETH" : "DAI";
   const isDeletingStream =
     BigInt(flowRateToReceiver) > 0 && BigInt(newFlowRate) <= 0;
-  const isDecresingStream = BigInt(newFlowRate) < BigInt(flowRateToReceiver);
-  const wrapAmountWei = parseEther(wrapAmount ?? "0");
-  const approvalTransactions =
-    !isFundingMatchingPool && wrapAmountWei > BigInt(underlyingTokenAllowance)
-      ? 1
-      : 0;
-  const totalTransactions =
-    isDeletingStream ||
-    (!shouldWrap && isDecresingStream) ||
-    (isFundingMatchingPool && !shouldWrap)
-      ? 1
-      : (isFundingMatchingPool && shouldWrap) ||
-        (shouldWrap && isDecresingStream)
-      ? 2 + approvalTransactions
-      : shouldWrap
-      ? 3 + approvalTransactions
-      : 2;
 
   const liquidationEstimate = useMemo(() => {
     if (address) {
@@ -237,6 +219,45 @@ export default function EditStream(props: EditStreamProps) {
     return netImpact;
   }, [newFlowRate, flowRateToReceiver, matchingData]);
 
+  const transactions = useMemo(() => {
+    if (!address || !superToken) {
+      return [];
+    }
+
+    const wrapAmountWei = parseEther(wrapAmount ?? "0");
+    const approvalTransactionsCount =
+      !isFundingMatchingPool && wrapAmountWei > BigInt(underlyingTokenAllowance)
+        ? 1
+        : 0;
+    const transactions: (() => Promise<void>)[] = [];
+
+    if (wrapAmount && Number(wrapAmount) > 0) {
+      if (!isFundingMatchingPool && approvalTransactionsCount > 0) {
+        transactions.push(async () => {
+          await underlyingTokenApprove(wrapAmountWei.toString());
+        });
+      }
+
+      transactions.push(async () => await wrap(wrapAmountWei));
+    }
+
+    if (
+      !isFundingMatchingPool &&
+      BigInt(newFlowRate) > BigInt(flowRateToReceiver)
+    ) {
+      transactions.push(async () => {
+        await updatePermissions(
+          SQF_STRATEGY_ADDRESS,
+          BigInt(newFlowRate).toString()
+        );
+      });
+    }
+
+    transactions.push(...transactionsToQueue);
+
+    return transactions;
+  }, [address, superToken, wrapAmount, newFlowRate, flowRateToReceiver]);
+
   useEffect(() => {
     (async () => {
       const currentStreamValue = roundWeiAmount(
@@ -300,36 +321,6 @@ export default function EditStream(props: EditStreamProps) {
   };
 
   const handleSubmit = async () => {
-    if (!address || !superToken) {
-      return;
-    }
-
-    let transactions: (() => Promise<void>)[] = [];
-
-    if (wrapAmount && Number(wrapAmount) > 0) {
-      if (!isFundingMatchingPool && approvalTransactions > 0) {
-        transactions.push(async () => {
-          await underlyingTokenApprove(wrapAmountWei.toString());
-        });
-      }
-
-      transactions.push(async () => await wrap(wrapAmountWei));
-    }
-
-    if (
-      !isFundingMatchingPool &&
-      BigInt(newFlowRate) > BigInt(flowRateToReceiver)
-    ) {
-      transactions.push(async () => {
-        await updatePermissions(
-          SQF_STRATEGY_ADDRESS,
-          BigInt(newFlowRate).toString()
-        );
-      });
-    }
-
-    transactions.push(...transactionsToQueue);
-
     await executeTransactions(transactions);
 
     setStep(Step.SUCCESS);
@@ -1021,7 +1012,7 @@ export default function EditStream(props: EditStreamProps) {
             )}
             <Button
               variant={isDeletingStream ? "danger" : "success"}
-              disabled={step === Step.SUCCESS}
+              disabled={transactions.length === 0 || step === Step.SUCCESS}
               className="d-flex justify-content-center mt-2 py-1 rounded-3 text-white fw-bold"
               onClick={handleSubmit}
             >
@@ -1038,13 +1029,15 @@ export default function EditStream(props: EditStreamProps) {
                     className="p-2"
                   ></Spinner>
                   <Card.Text className="m-0">
-                    {completedTransactions + 1}/{totalTransactions}
+                    {completedTransactions + 1}/{transactions.length}
                   </Card.Text>
                 </Stack>
               ) : isDeletingStream ? (
                 "Cancel Stream"
+              ) : transactions.length > 0 ? (
+                `Submit (${transactions.length})`
               ) : (
-                `Submit (${totalTransactions})`
+                "Submit"
               )}
             </Button>
             {transactionError && (

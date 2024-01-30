@@ -12,7 +12,6 @@ import FundGrantee from "./FundGrantee";
 import useAllo from "../hooks/allo";
 import useRoundQuery from "../hooks/roundQuery";
 import { recipientIds } from "../lib/recipientIds";
-import { clampText } from "../lib/utils";
 
 export type AllocationData = {
   flowRate: `${number}`;
