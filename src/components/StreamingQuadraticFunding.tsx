@@ -148,13 +148,8 @@ export default function StreamingQuadraticFunding() {
                   recipients[transactionPanelState.granteeIndex].superApp
                 }
                 description={
-                  <>
-                    {clampText(
-                      recipientsDetails[transactionPanelState.granteeIndex]
-                        .description,
-                      280
-                    )}
-                  </>
+                  recipientsDetails[transactionPanelState.granteeIndex]
+                    .description
                 }
               />
             </Col>

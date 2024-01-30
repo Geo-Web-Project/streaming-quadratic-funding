@@ -226,7 +226,11 @@ export default function FundingSources(props: FundingSourcesProps) {
                 direction="vertical"
                 className="align-items-center fs-6 opacity-50"
               >
-                {matchingData.poolDistributors.length}
+                {
+                  matchingData.poolDistributors.filter(
+                    (elem) => BigInt(elem.flowRate) > 0
+                  ).length
+                }
                 <Image src={ContributionsIcon} alt="contributions" width={16} />
               </Stack>
             </Stack>

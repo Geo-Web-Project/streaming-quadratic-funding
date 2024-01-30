@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useAccount, useContractRead } from "wagmi";
 import { formatEther } from "viem";
 import Stack from "react-bootstrap/Stack";
@@ -8,6 +9,8 @@ import Badge from "react-bootstrap/Badge";
 import Spinner from "react-bootstrap/Spinner";
 import XLogo from "../assets/x-logo.svg";
 import WebIcon from "../assets/web.svg";
+import ExpandMoreIcon from "../assets/expand-more.svg";
+import ExpandLessIcon from "../assets/expand-less.svg";
 import { FundGranteeProps } from "./FundGrantee";
 import useFlowingAmount from "../hooks/flowingAmount";
 import useAllo from "../hooks/allo";
@@ -16,12 +19,15 @@ import {
   unitOfTime,
   fromTimeUnitsToSeconds,
   roundWeiAmount,
+  clampText,
 } from "../lib/utils";
 import { superfluidPoolAbi } from "../lib/abi/superfluidPool";
 
 type RecipientDetailsProps = FundGranteeProps & {
   flowRateToReceiver: string;
 };
+
+const MAX_DESCRIPTION_LENGTH = 264;
 
 export default function RecipientDetails(props: RecipientDetailsProps) {
   const {
@@ -36,6 +42,8 @@ export default function RecipientDetails(props: RecipientDetailsProps) {
     social,
     flowRateToReceiver,
   } = props;
+
+  const [readMore, setReadMore] = useState(false);
 
   const { address } = useAccount();
   const { recipients, gdaPool } = useAllo();
@@ -167,8 +175,29 @@ export default function RecipientDetails(props: RecipientDetailsProps) {
         <Card.Text className="w-20 mt-3">total funding</Card.Text>
       </Stack>
       <Card.Text className="m-0 p-2 fs-5" style={{ maxWidth: 500 }}>
-        {description}
+        <>
+          {readMore
+            ? description
+            : clampText(description, MAX_DESCRIPTION_LENGTH)}
+        </>
       </Card.Text>
+      {readMore ? (
+        <Button
+          variant="transparent"
+          className="p-0 border-0 shadow-none"
+          onClick={() => setReadMore(false)}
+        >
+          <Image src={ExpandLessIcon} alt="less" width={18} />
+        </Button>
+      ) : description.length > MAX_DESCRIPTION_LENGTH ? (
+        <Button
+          variant="transparent"
+          className="p-0 border-0 shadow-none"
+          onClick={() => setReadMore(true)}
+        >
+          <Image src={ExpandMoreIcon} alt="more" width={18} />
+        </Button>
+      ) : null}
     </Stack>
   );
 }

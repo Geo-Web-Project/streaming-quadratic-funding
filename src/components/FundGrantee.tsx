@@ -30,8 +30,8 @@ export type FundGranteeProps = {
   image: string;
   website: string;
   social: string;
-  description: JSX.Element;
   granteeAddress: Address;
+  description: string;
   recipientId: Address;
 };
 
@@ -51,10 +51,7 @@ export default function FundGrantee(props: FundGranteeProps) {
   const { address } = useAccount();
   const { data: walletClient } = useWalletClient();
   const { alloStrategy, recipients } = useAllo();
-  const { deleteFlow } = useSuperfluid(
-    DAIX_ADDRESS,
-    address
-  );
+  const { deleteFlow } = useSuperfluid(DAIX_ADDRESS, address);
 
   const allocate = async () => {
     if (!walletClient) {
