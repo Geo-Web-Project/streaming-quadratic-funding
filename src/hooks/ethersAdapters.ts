@@ -19,20 +19,20 @@ function publicClientToProvider(publicClient: PublicClient) {
   if (transport.type === "fallback")
     return new providers.FallbackProvider(
       (transport.transports as ReturnType<HttpTransport>[]).map(
-        ({ value }) => new providers.JsonRpcProvider(value?.url, network)
+        ({ value }) => new providers.JsonRpcBatchProvider(value?.url, network)
       )
     );
 
   return new providers.JsonRpcProvider(transport.url, network);
 }
 
-function useEthersProvider({ chainId }: { chainId?: number } = {}) {
-  const publicClient = usePublicClient({ chainId });
+function useEthersProvider() {
+  const publicClient = usePublicClient();
 
   return useMemo(() => publicClientToProvider(publicClient), [publicClient]);
 }
 
-export function walletClientToSigner(walletClient: WalletClient) {
+function walletClientToSigner(walletClient: WalletClient) {
   const { account, chain, transport } = walletClient;
 
   const network = {
@@ -46,8 +46,8 @@ export function walletClientToSigner(walletClient: WalletClient) {
   return signer;
 }
 
-function useEthersSigner({ chainId }: { chainId?: number } = {}) {
-  const { data: walletClient } = useWalletClient({ chainId });
+function useEthersSigner() {
+  const { data: walletClient } = useWalletClient();
 
   return useMemo(
     () => (walletClient ? walletClientToSigner(walletClient) : undefined),

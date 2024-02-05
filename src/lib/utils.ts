@@ -91,8 +91,8 @@ export function truncateStr(str: string, strLen: number) {
   );
 }
 
-export function roundWeiAmount(flowRate: bigint, digits: number) {
-  return parseFloat(Number(formatEther(flowRate)).toFixed(digits)).toString();
+export function roundWeiAmount(amount: bigint, digits: number) {
+  return parseFloat(Number(formatEther(amount)).toFixed(digits)).toString();
 }
 
 export function convertStreamValueToInterval(

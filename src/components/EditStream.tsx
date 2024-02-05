@@ -17,18 +17,21 @@ import Alert from "react-bootstrap/Alert";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import ConnectWallet from "./ConnectWallet";
 import CopyTooltip from "./CopyTooltip";
+import OnRampWidget from "./OnRampWidget";
 import InfoIcon from "../assets/info.svg";
 import OpLogo from "../assets/op-logo.svg";
 import ETHLogo from "../assets/eth-white.svg";
 import DAILogo from "../assets/dai-white.svg";
 import DoneIcon from "../assets/done.svg";
 import XIcon from "../assets/x-logo.svg";
+import SwapIcon from "../assets/swap.svg";
 import LensIcon from "../assets/lens.svg";
 import FarcasterIcon from "../assets/farcaster.svg";
 import PassportIcon from "../assets/passport.svg";
 import ArrowDownIcon from "../assets/arrow-down.svg";
 import ArrowForwardIcon from "../assets/arrow-forward.svg";
 import CopyIcon from "../assets/copy-light.svg";
+import SuccessIcon from "../assets/success.svg";
 import ReloadIcon from "../assets/reload.svg";
 import { MatchingData } from "../components/StreamingQuadraticFunding";
 import useFlowingAmount from "../hooks/flowingAmount";
@@ -69,6 +72,7 @@ interface EditStreamProps {
 enum Step {
   SELECT_AMOUNT = "Edit stream",
   WRAP = "Wrap to Super Token",
+  TOP_UP = "Top up required tokens",
   REVIEW = "Review the transaction(s)",
   MINT_PASSPORT = "Mint Gitcoin Passport",
   SUCCESS = "Success!",
@@ -128,6 +132,12 @@ export default function EditStream(props: EditStreamProps) {
     watch: true,
     token: isFundingMatchingPool ? void 0 : DAI_ADDRESS,
   });
+  const { data: ethBalance } = useBalance({
+    address,
+    cacheTime: 10000,
+    staleTime: 10000,
+    watch: true,
+  });
   const {
     areTransactionsLoading,
     completedTransactions,
@@ -144,6 +154,21 @@ export default function EditStream(props: EditStreamProps) {
       watch: false,
     });
 
+  const minEthBalance = 0.002;
+  const suggestedTokenBalance = newFlowRate
+    ? BigInt(newFlowRate) *
+      BigInt(fromTimeUnitsToSeconds(1, unitOfTime[TimeInterval.MONTH])) *
+      BigInt(3)
+    : BigInt(0);
+  const hasSufficientEthBalance =
+    ethBalance && ethBalance.value > parseEther(minEthBalance.toString());
+  const hasSufficientTokenBalance =
+    underlyingTokenBalance &&
+    superTokenBalance &&
+    (underlyingTokenBalance.value > suggestedTokenBalance ||
+      superTokenBalance > suggestedTokenBalance)
+      ? true
+      : false;
   const superTokenSymbol = isFundingMatchingPool ? "ETHx" : "DAIx";
   const superTokenIcon = isFundingMatchingPool ? ETHLogo : DAILogo;
   const underlyingTokenName = isFundingMatchingPool ? "ETH" : "DAI";
@@ -256,7 +281,18 @@ export default function EditStream(props: EditStreamProps) {
     transactions.push(...transactionsToQueue);
 
     return transactions;
-  }, [address, superToken, wrapAmount, newFlowRate, flowRateToReceiver]);
+  }, [address, superToken, wrapAmount, newFlowRate]);
+
+  useEffect(() => {
+    (async () => {
+      if (superToken && !isFundingMatchingPool) {
+        const underlyingTokenAllowance =
+          await getUnderlyingTokenAllowance(superToken);
+
+        setUnderlyingTokenAllowance(underlyingTokenAllowance);
+      }
+    })();
+  }, [superToken]);
 
   useEffect(() => {
     (async () => {
@@ -271,20 +307,8 @@ export default function EditStream(props: EditStreamProps) {
   }, [address, receiver, flowRateToReceiver]);
 
   useEffect(() => {
-    (async () => {
-      if (superToken && !isFundingMatchingPool) {
-        const underlyingTokenAllowance =
-          await getUnderlyingTokenAllowance(superToken);
-
-        setUnderlyingTokenAllowance(underlyingTokenAllowance);
-      }
-    })();
-  }, [superToken]);
-
-  useEffect(() => {
-    if (amountPerTimeInterval) {
+    if (!areTransactionsLoading && amountPerTimeInterval) {
       if (
-        amountPerTimeInterval &&
         Number(amountPerTimeInterval) > 0 &&
         liquidationEstimate &&
         dayjs
@@ -305,7 +329,7 @@ export default function EditStream(props: EditStreamProps) {
         ).toString()
       );
     }
-  }, [amountPerTimeInterval, timeInterval]);
+  }, [amountPerTimeInterval, timeInterval, areTransactionsLoading]);
 
   const handleAmountSelection = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -484,7 +508,9 @@ export default function EditStream(props: EditStreamProps) {
                 className="py-1 rounded-3 text-white"
                 onClick={() =>
                   setStep(
-                    wrapAmount
+                    !hasSufficientEthBalance || !hasSufficientTokenBalance
+                      ? Step.TOP_UP
+                      : wrapAmount
                       ? Step.WRAP
                       : isFundingMatchingPool ||
                         (passportScore && passportScore >= minPassportScore)
@@ -505,11 +531,11 @@ export default function EditStream(props: EditStreamProps) {
         <Button
           variant="transparent"
           className="d-flex align-items-center gap-2 p-3 border-0 rounded-0 text-white shadow-none"
-          onClick={() => setStep(Step.WRAP)}
+          onClick={() => setStep(Step.TOP_UP)}
           style={{
             pointerEvents:
               step === Step.SELECT_AMOUNT ||
-              step === Step.WRAP ||
+              step === Step.TOP_UP ||
               step === Step.SUCCESS
                 ? "none"
                 : "auto",
@@ -522,11 +548,172 @@ export default function EditStream(props: EditStreamProps) {
                     ${
                       step === Step.SELECT_AMOUNT
                         ? "bg-secondary"
-                        : step === Step.REVIEW ||
-                          step === Step.MINT_PASSPORT ||
-                          step === Step.SUCCESS
-                        ? "bg-info"
-                        : "bg-aqua"
+                        : step === Step.TOP_UP
+                        ? "bg-aqua"
+                        : "bg-info"
+                    }`}
+            style={{
+              width: 20,
+              height: 20,
+            }}
+          >
+            {step !== Step.SELECT_AMOUNT && step !== Step.TOP_UP ? (
+              <Image src={DoneIcon} alt="done" width={16} />
+            ) : (
+              <Card.Text className="m-auto text-blue">2</Card.Text>
+            )}
+          </Badge>
+          {Step.TOP_UP}
+        </Button>
+        <Accordion.Collapse eventKey={Step.TOP_UP} className="p-3 pt-0">
+          <>
+            {isFundingMatchingPool ? (
+              <Stack
+                direction="vertical"
+                gap={3}
+                className="align-items-center w-50 bg-dark px-2 py-3 rounded-3 m-auto"
+              >
+                <Card.Text className="m-0 fs-5">ETH Balance:</Card.Text>
+                <Card.Text
+                  className={`d-flex align-items-center gap-1 m-0 fs-3 ${
+                    !ethBalance || ethBalance.value === BigInt(0)
+                      ? "text-danger"
+                      : !hasSufficientTokenBalance
+                      ? "text-yellow"
+                      : "text-white"
+                  }`}
+                >
+                  {ethBalance && superTokenBalance
+                    ? formatEther(ethBalance.value + superTokenBalance).slice(
+                        0,
+                        8
+                      )
+                    : "0"}
+                  {hasSufficientTokenBalance && (
+                    <Image src={SuccessIcon} alt="success" />
+                  )}
+                </Card.Text>
+                <Card.Text className="m-0 fs-6">
+                  At least {roundWeiAmount(suggestedTokenBalance, 6)} suggested
+                </Card.Text>
+                <OnRampWidget />
+              </Stack>
+            ) : (
+              <Stack direction="horizontal" gap={3}>
+                <Stack
+                  direction="vertical"
+                  gap={3}
+                  className="align-items-center w-50 bg-dark px-2 py-3 rounded-3"
+                >
+                  <Card.Text className="m-0 fs-5">ETH Balance:</Card.Text>
+                  <Card.Text
+                    className={`d-flex align-items-center gap-1 m-0 fs-3 ${
+                      hasSufficientEthBalance ? "text-white" : "text-danger"
+                    }`}
+                  >
+                    {ethBalance ? ethBalance.formatted.slice(0, 8) : "0"}
+                    {hasSufficientEthBalance && (
+                      <Image src={SuccessIcon} alt="success" />
+                    )}
+                  </Card.Text>
+                  <Card.Text className="m-0 fs-6">
+                    At least {minEthBalance} needed for gas
+                  </Card.Text>
+                  <OnRampWidget />
+                </Stack>
+                <Stack
+                  direction="vertical"
+                  gap={3}
+                  className="align-items-center w-50 bg-dark px-2 py-3 rounded-3 fs-5"
+                >
+                  <Card.Text className="m-0 fs-5">
+                    DAI + DAIx Balance:
+                  </Card.Text>
+                  <Card.Text
+                    className={`d-flex align-items-center gap-1 m-0 fs-3 ${
+                      hasSufficientTokenBalance
+                        ? "text-white"
+                        : !underlyingTokenBalance ||
+                          underlyingTokenBalance.value + superTokenBalance ===
+                            BigInt(0)
+                        ? "text-danger"
+                        : "text-yellow"
+                    }`}
+                  >
+                    {underlyingTokenBalance && superTokenBalance
+                      ? formatEther(
+                          underlyingTokenBalance.value + superTokenBalance
+                        ).slice(0, 8)
+                      : "0"}
+                    {hasSufficientTokenBalance && (
+                      <Image src={SuccessIcon} alt="success" />
+                    )}
+                  </Card.Text>
+                  <Card.Text className="m-0 fs-6">
+                    At least {roundWeiAmount(suggestedTokenBalance, 6)} to
+                    donate suggested
+                  </Card.Text>
+                  <Button
+                    variant="link"
+                    href="https://swap.defillama.com/?chain=optimism&from=0x0000000000000000000000000000000000000000&to=0xda10009cbd5d07dd0cecc66161fc93d7c9000da1"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="d-flex justify-content-center gap-1 bg-primary text-decoration-none rounded-3 text-white fs-4"
+                  >
+                    <Image src={SwapIcon} alt="swap" width={18} />
+                    Swap ETH
+                  </Button>
+                </Stack>
+              </Stack>
+            )}
+            <Button
+              variant="success"
+              className="w-50 mt-4 py-1 rounded-3 text-white float-end"
+              disabled={
+                (!isFundingMatchingPool &&
+                  (!hasSufficientEthBalance || !hasSufficientTokenBalance)) ||
+                (isFundingMatchingPool &&
+                  (!ethBalance ||
+                    ethBalance.value + superTokenBalance === BigInt(0)))
+              }
+              onClick={() =>
+                setStep(
+                  wrapAmount
+                    ? Step.WRAP
+                    : isFundingMatchingPool ||
+                      (passportScore && passportScore >= minPassportScore)
+                    ? Step.REVIEW
+                    : Step.MINT_PASSPORT
+                )
+              }
+            >
+              Continue
+            </Button>
+          </>
+        </Accordion.Collapse>
+      </Card>
+      <Card className="bg-blue text-white rounded-0 border-0 border-bottom border-purple">
+        <Button
+          variant="transparent"
+          className="d-flex align-items-center gap-2 p-3 border-0 rounded-0 text-white shadow-none"
+          onClick={() => setStep(Step.WRAP)}
+          style={{
+            pointerEvents:
+              step === Step.REVIEW || step === Step.MINT_PASSPORT
+                ? "auto"
+                : "none",
+          }}
+        >
+          <Badge
+            pill
+            as="div"
+            className={`d-flex justify-content-center p-0
+                    ${
+                      step === Step.SELECT_AMOUNT || step === Step.TOP_UP
+                        ? "bg-secondary"
+                        : step === Step.WRAP
+                        ? "bg-aqua"
+                        : "bg-info"
                     }`}
             style={{
               width: 20,
@@ -538,7 +725,7 @@ export default function EditStream(props: EditStreamProps) {
             step === Step.SUCCESS ? (
               <Image src={DoneIcon} alt="done" width={16} />
             ) : (
-              <Card.Text className="m-auto text-blue">2</Card.Text>
+              <Card.Text className="m-auto text-blue">3</Card.Text>
             )}
           </Badge>
           {Step.WRAP}
@@ -713,7 +900,7 @@ export default function EditStream(props: EditStreamProps) {
               {step === Step.REVIEW || step === Step.SUCCESS ? (
                 <Image src={DoneIcon} alt="done" width={16} />
               ) : (
-                <Card.Text className="m-auto text-blue">3</Card.Text>
+                <Card.Text className="m-auto text-blue">4</Card.Text>
               )}
             </Badge>
             {Step.MINT_PASSPORT}
@@ -815,7 +1002,7 @@ export default function EditStream(props: EditStreamProps) {
               <Image src={DoneIcon} alt="done" width={16} />
             ) : (
               <Card.Text className="m-auto text-blue">
-                {isFundingMatchingPool ? 3 : 4}
+                {isFundingMatchingPool ? 4 : 5}
               </Card.Text>
             )}
           </Badge>
