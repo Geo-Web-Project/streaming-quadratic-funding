@@ -162,11 +162,15 @@ export default function EditStream(props: EditStreamProps) {
     : BigInt(0);
   const hasSufficientEthBalance =
     ethBalance && ethBalance.value > parseEther(minEthBalance.toString());
-  const hasSufficientTokenBalance =
+  const hasSuggestedTokenBalance =
     underlyingTokenBalance &&
-    superTokenBalance &&
     (underlyingTokenBalance.value > suggestedTokenBalance ||
       superTokenBalance > suggestedTokenBalance)
+      ? true
+      : false;
+  const hasSufficientTokenBalance =
+    underlyingTokenBalance &&
+    underlyingTokenBalance.value + superTokenBalance > BigInt(0)
       ? true
       : false;
   const superTokenSymbol = isFundingMatchingPool ? "ETHx" : "DAIx";
@@ -508,7 +512,7 @@ export default function EditStream(props: EditStreamProps) {
                 className="py-1 rounded-3 text-white"
                 onClick={() =>
                   setStep(
-                    !hasSufficientEthBalance || !hasSufficientTokenBalance
+                    !hasSufficientEthBalance || !hasSuggestedTokenBalance
                       ? Step.TOP_UP
                       : wrapAmount
                       ? Step.WRAP
@@ -578,18 +582,18 @@ export default function EditStream(props: EditStreamProps) {
                   className={`d-flex align-items-center gap-1 m-0 fs-3 ${
                     !ethBalance || ethBalance.value === BigInt(0)
                       ? "text-danger"
-                      : !hasSufficientTokenBalance
+                      : !hasSuggestedTokenBalance
                       ? "text-yellow"
                       : "text-white"
                   }`}
                 >
-                  {ethBalance && superTokenBalance
+                  {ethBalance
                     ? formatEther(ethBalance.value + superTokenBalance).slice(
                         0,
                         8
                       )
                     : "0"}
-                  {hasSufficientTokenBalance && (
+                  {hasSuggestedTokenBalance && (
                     <Image src={SuccessIcon} alt="success" />
                   )}
                 </Card.Text>
@@ -631,7 +635,7 @@ export default function EditStream(props: EditStreamProps) {
                   </Card.Text>
                   <Card.Text
                     className={`d-flex align-items-center gap-1 m-0 fs-3 ${
-                      hasSufficientTokenBalance
+                      hasSuggestedTokenBalance
                         ? "text-white"
                         : !underlyingTokenBalance ||
                           underlyingTokenBalance.value + superTokenBalance ===
@@ -640,12 +644,12 @@ export default function EditStream(props: EditStreamProps) {
                         : "text-yellow"
                     }`}
                   >
-                    {underlyingTokenBalance && superTokenBalance
+                    {underlyingTokenBalance
                       ? formatEther(
                           underlyingTokenBalance.value + superTokenBalance
                         ).slice(0, 8)
                       : "0"}
-                    {hasSufficientTokenBalance && (
+                    {hasSuggestedTokenBalance && (
                       <Image src={SuccessIcon} alt="success" />
                     )}
                   </Card.Text>
@@ -666,6 +670,13 @@ export default function EditStream(props: EditStreamProps) {
                 </Stack>
               </Stack>
             )}
+            <Button
+              variant="transparent"
+              className="mt-4 text-info"
+              onClick={() => setStep(Step.WRAP)}
+            >
+              Skip
+            </Button>
             <Button
               variant="success"
               className="w-50 mt-4 py-1 rounded-3 text-white float-end"
