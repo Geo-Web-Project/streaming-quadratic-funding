@@ -84,7 +84,7 @@ export default function Grantees(props: GranteesProps) {
                 direction="vertical"
                 className="align-items-center fs-6 opacity-50 text-white"
               >
-                {directAllocationData[i].activeCFAIncomingStreamCount}
+                {directAllocationData[i].activeIncomingStreamCount}
                 <Image src={ContributionsIcon} alt="contributions" width={16} />
               </Stack>
               <Card.Subtitle

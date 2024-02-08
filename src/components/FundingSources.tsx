@@ -89,7 +89,7 @@ export default function FundingSources(props: FundingSourcesProps) {
   ).length;
   const contributionsCountDirect =
     directAllocationData.reduce(
-      (acc, elem) => acc + (elem?.activeCFAIncomingStreamCount ?? 0),
+      (acc, elem) => acc + (elem?.activeIncomingStreamCount ?? 0),
       0
     ) - contributionsCountUser;
 
