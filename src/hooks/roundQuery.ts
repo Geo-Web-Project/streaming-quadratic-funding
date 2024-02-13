@@ -100,26 +100,30 @@ export default function useRoundQuery(userAddress?: Address) {
     ? recipients.map((recipient) => recipient.superApp.toLowerCase())
     : [];
   const publicClient = usePublicClient();
-  const { data: userInfoQueryResult } = useQuery(USER_INFO_QUERY, {
-    variables: {
-      address: userAddress?.toLowerCase() ?? "",
-      token: DAIX_ADDRESS.toLowerCase(),
-    },
-    pollInterval: 10000,
-  });
-  const { data: directAllocationQueryResult } = useQuery(
-    DIRECT_ALLOCATION_QUERY,
+  const { data: userInfoQueryResult, loading: userInfoLoading } = useQuery(
+    USER_INFO_QUERY,
     {
-      variables: { superApps },
+      variables: {
+        address: userAddress?.toLowerCase() ?? "",
+        token: DAIX_ADDRESS.toLowerCase(),
+      },
       pollInterval: 10000,
     }
   );
-  const { data: matchingPoolQueryResult } = useQuery(GDA_POOL_QUERY, {
-    variables: {
-      gdaPool: gdaPool?.toLowerCase() ?? "",
-    },
+  const {
+    data: directAllocationQueryResult,
+    loading: directAllocationLoading,
+  } = useQuery(DIRECT_ALLOCATION_QUERY, {
+    variables: { superApps },
     pollInterval: 10000,
   });
+  const { data: matchingPoolQueryResult, loading: matchingPoolLoading } =
+    useQuery(GDA_POOL_QUERY, {
+      variables: {
+        gdaPool: gdaPool?.toLowerCase() ?? "",
+      },
+      pollInterval: 10000,
+    });
 
   useEffect(() => {
     (async () => {
@@ -127,6 +131,9 @@ export default function useRoundQuery(userAddress?: Address) {
         !publicClient ||
         !recipients ||
         !gdaPool ||
+        userInfoLoading ||
+        directAllocationLoading ||
+        matchingPoolLoading ||
         !userInfoQueryResult ||
         !directAllocationQueryResult ||
         directAllocationQueryResult?.accounts.length === 0 ||

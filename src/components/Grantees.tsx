@@ -91,7 +91,7 @@ export default function Grantees(props: GranteesProps) {
                 as="p"
                 className="d-block p-0 m-0 mb-1 fs-5 text-info text-wrap text-break text-truncate lh-md"
               >
-                {clampText(descriptions[i], 62)}
+                {clampText(descriptions[i], 60)}
               </Card.Subtitle>
             </Stack>
             <Stack

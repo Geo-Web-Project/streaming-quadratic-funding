@@ -533,15 +533,16 @@ export default function Visualization(props: VisualizationProps) {
     granteeUnits: bigint,
     totalUnits: bigint
   ) => {
-    if (contributionFlowRate === BigInt(0)) {
-      return BigInt(0);
+    const scaledFlowRate = contributionFlowRate / BigInt(1e6);
+
+    if (scaledFlowRate === BigInt(0)) {
+      return scaledFlowRate;
     }
 
     const granteeUnitsWithoutContribution =
-      (sqrtBigInt(granteeUnits * BigInt(1000)) -
-        sqrtBigInt(contributionFlowRate)) **
+      (sqrtBigInt(granteeUnits * BigInt(1e5)) - sqrtBigInt(scaledFlowRate)) **
         BigInt(2) /
-      BigInt(1000);
+      BigInt(1e5);
     const userUnits = granteeUnits - granteeUnitsWithoutContribution;
     const contributionImpactOnMatching =
       (userUnits * poolFlowRate) / totalUnits;

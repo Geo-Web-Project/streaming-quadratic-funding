@@ -231,14 +231,16 @@ export default function EditStream(props: EditStreamProps) {
       return BigInt(0);
     }
 
+    const scaledPreviousFlowRate = BigInt(flowRateToReceiver) / BigInt(1e6);
+    const scaledNewFlowRate = BigInt(newFlowRate) / BigInt(1e6);
     const granteeUnits = BigInt(matchingData.members[granteeIndex].units);
     const granteeFlowRate = BigInt(matchingData.members[granteeIndex].flowRate);
     const newGranteeUnits =
-      (sqrtBigInt(granteeUnits * BigInt(1000)) -
-        sqrtBigInt(BigInt(flowRateToReceiver)) +
-        sqrtBigInt(BigInt(newFlowRate))) **
+      (sqrtBigInt(granteeUnits * BigInt(1e5)) -
+        sqrtBigInt(BigInt(scaledPreviousFlowRate)) +
+        sqrtBigInt(BigInt(scaledNewFlowRate))) **
         BigInt(2) /
-      BigInt(1000);
+      BigInt(1e5);
     const unitsDelta = newGranteeUnits - granteeUnits;
     const newPoolUnits = unitsDelta + BigInt(matchingData.totalUnits);
     const newGranteeFlowRate =
